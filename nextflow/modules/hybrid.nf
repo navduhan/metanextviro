@@ -34,13 +34,7 @@ process hybrid {
 
     # Run CD-HIT-EST for clustering
     echo " Running CD-HIT-EST for strand-specific clustering..."
-    cd-hit-est \\ 
-        -i hybrid_assembly/${id}/${id}_merged.fasta \\ 
-        -o hybrid_assembly/${id}/${id}_merged_cdhit.fasta \\ 
-        -n 5 \\
-        -c 0.95 \\ 
-        -M 0 \\ 
-        -T ${task.cpus}
+    cd-hit-est -i hybrid_assembly/${id}/${id}_merged.fasta -o hybrid_assembly/${id}/${id}_merged_cdhit.fasta -n 10 -c 0.9 -M 0 -T ${task.cpus}
 
     # Verify CD-HIT-EST output
     if [ ! -f "hybrid_assembly/${id}/${id}_merged_cdhit.fasta" ]; then
