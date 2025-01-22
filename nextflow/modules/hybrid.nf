@@ -44,9 +44,9 @@ process hybrid {
 
     # Rename the contig headers
     echo " Renaming contig headers for sample: $id"
-    python3 ${workflow.projectDir}/nextflow/bin/rename_contigs.py \\ 
-        -i hybrid_assembly/${id}/${id}_merged_cdhit.fasta \\ 
-        -o hybrid_assembly/${id}/${id}_metanextviro_hybrid_contigs.fa \\ 
+    python3 ${workflow.projectDir}/nextflow/bin/rename_contigs.py \ 
+        -i hybrid_assembly/${id}/${id}_merged_cdhit.fasta \ 
+        -o hybrid_assembly/${id}/${id}_metanextviro_hybrid_contigs.fa \ 
         -s hybrid
 
     # Verify renamed contigs
