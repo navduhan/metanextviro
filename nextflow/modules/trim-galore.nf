@@ -29,6 +29,7 @@ process trim_galore {
     if [ -n "${reads2}" ]; then
         echo " Running Trim Galore in paired-end mode..."
         trim_galore --paired \
+                    --gzip \
                     --quality ${params.quality} \
                     --cores ${task.cpus} \
                     --basename ${id} \
@@ -37,6 +38,7 @@ process trim_galore {
     else
         echo " Running Trim Galore in single-end mode..."
         trim_galore --quality ${params.quality} \
+                    --gzip \
                     --cores ${task.cpus} \
                     --basename ${id} \
                     --output_dir trimmed_reads \
