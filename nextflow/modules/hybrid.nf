@@ -37,6 +37,7 @@ process hybrid {
     cd-hit-est \\ 
         -i hybrid_assembly/${id}/${id}_merged.fasta \\ 
         -o hybrid_assembly/${id}/${id}_merged_cdhit.fasta \\ 
+        -n 10 \\
         -c 0.95 \\ 
         -M 0 \\ 
         -T ${task.cpus}
