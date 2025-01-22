@@ -20,12 +20,12 @@ process blastx {
     echo " Using BLAST database: ${params.blastdb_nr}"
 
     # Run BLASTX search
-    blastx \\ 
-        -query ${fasta_file} \\ 
-        -db ${params.blastdb_nr} \\ 
-        -out ${id}_nr.txt \\ 
-        -num_alignments 5 \\ 
-        -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovs evalue bitscore qlen slen stitle staxids qstrand' \\ 
+    blastx \
+        -query ${fasta_file} \
+        -db ${params.blastdb_nr} \
+        -out ${id}_nr.txt \
+        -num_alignments 5 \
+        -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovs evalue bitscore qlen slen stitle staxids qstrand' \
         -num_threads ${task.cpus}
 
     # Verify BLASTX output
@@ -41,10 +41,10 @@ process blastx {
     mkdir -p ${id}_processed_results
 
     # Run Python script to process the BLASTX results
-    python3 ${workflow.projectDir}/nextflow/bin/process_blast_results.py \\ 
-        -b ${id}_nr.txt \\ 
-        -f ${fasta_file} \\ 
-        -p ${id} \\ 
+    python3 ${workflow.projectDir}/nextflow/bin/process_blast_results.py \
+        -b ${id}_nr.txt \
+        -f ${fasta_file} \
+        -p ${id} \
         -s nr
 
     # Verify processed output

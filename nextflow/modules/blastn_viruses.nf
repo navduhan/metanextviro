@@ -20,12 +20,12 @@ process blastn_viruses {
     echo " Using BLAST database: ${params.blastdb_viruses}"
 
     # Run BLAST search
-    blastn \\ 
-        -query ${fasta_file} \\ 
-        -db ${params.blastdb_viruses} \\ 
-        -out ${id}_viruses.txt \\ 
-        -num_alignments 5 \\ 
-        -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovs evalue bitscore qlen slen stitle staxids sstrand' \\ 
+    blastn \
+        -query ${fasta_file} \
+        -db ${params.blastdb_viruses} \
+        -out ${id}_viruses.txt \
+        -num_alignments 5 \
+        -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovs evalue bitscore qlen slen stitle staxids sstrand' \
         -num_threads ${task.cpus}
 
     # Verify BLAST output
@@ -38,10 +38,10 @@ process blastn_viruses {
     echo " Processing BLAST results for sample: $id"
     
     # Run Python script to process the BLAST results
-    python3 ${workflow.projectDir}/nextflow/bin/process_blast_results.py \\ 
-        -b ${id}_viruses.txt \\ 
-        -f ${fasta_file} \\ 
-        -p ${id} \\ 
+    python3 ${workflow.projectDir}/nextflow/bin/process_blast_results.py \
+        -b ${id}_viruses.txt \
+        -f ${fasta_file} \
+        -p ${id} \
         -s viruses
 
     # Verify processed output
