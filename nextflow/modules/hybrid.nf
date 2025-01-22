@@ -9,7 +9,7 @@ process hybrid {
         tuple val(id), path(megahit_contigs), path(metaspades_contigs)  // Input: Sample ID and contig files from MEGAHIT and metaSPAdes
 
     output:
-        tuple val(id), path("hybrid_assembly/${id}/${id}_metanextviro_contigs.fa"), emit: contigs  // Emit renamed contigs
+        tuple val(id), path("hybrid_assembly/${id}/${id}_metanextviro_hybrid_contigs.fa"), emit: contigs  // Emit renamed contigs
 
     script:
     """
@@ -51,11 +51,11 @@ process hybrid {
     echo " Renaming contig headers for sample: $id"
     python3 ${workflow.projectDir}/nextflow/bin/rename_contigs.py \\ 
         -i hybrid_assembly/${id}/${id}_merged_cdhit.fasta \\ 
-        -o hybrid_assembly/${id}/${id}_metanextviro_contigs.fa \\ 
+        -o hybrid_assembly/${id}/${id}_metanextviro_hybrid_contigs.fa \\ 
         -s hybrid
 
     # Verify renamed contigs
-    if [ ! -f "hybrid_assembly/${id}/${id}_metanextviro_contigs.fa" ]; then
+    if [ ! -f "hybrid_assembly/${id}/${id}_metanextviro_hybrid_contigs.fa" ]; then
         echo " Error: Failed to rename contigs for sample: $id" >&2
         exit 1
     fi

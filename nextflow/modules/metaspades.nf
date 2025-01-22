@@ -11,7 +11,7 @@ process metaspades {
         tuple val(id), path(reads1), path(reads2)  // Input: Sample ID and reads (paired or single)
 
     output:
-        tuple val(id), path("metaspades_assembly/${id}/${id}_metanextviro_contigs.fa"), emit: contigs  // Emit renamed contigs
+        tuple val(id), path("metaspades_assembly/${id}/${id}_metanextviro_metaspades_contigs.fa"), emit: contigs  // Emit renamed contigs
 
     script:
     """
@@ -55,11 +55,11 @@ process metaspades {
     # Rename scaffolds to contigs using the Python script
     python3 ${workflow.projectDir}/nextflow/bin/rename_contigs.py \\
         -i metaspades_assembly/${id}/scaffolds.fasta \\
-        -o metaspades_assembly/${id}/${id}_metanextviro_contigs.fa \\
+        -o metaspades_assembly/${id}/${id}_metanextviro_metaspades_contigs.fa \\
         -s MetaSPAdes
 
     # Verify renamed contigs
-    if [ ! -f "metaspades_assembly/${id}/${id}_metanextviro_contigs.fa" ]; then
+    if [ ! -f "metaspades_assembly/${id}/${id}_metanextviro_metaspades_contigs.fa" ]; then
         echo " Error: Failed to rename scaffolds to contigs for sample: $id" >&2
         exit 1
     fi

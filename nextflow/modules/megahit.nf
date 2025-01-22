@@ -11,7 +11,7 @@ process megahit {
         tuple val(id), path(reads1), path(reads2)  // Input: Sample ID and reads (paired or single)
 
     output:
-        tuple val(id), path("megahit_assembly/${id}/${id}_metanextviro_contigs.fa"), emit: contigs  // Emit renamed contigs
+        tuple val(id), path("megahit_assembly/${id}/${id}_metanextviro_megahit_contigs.fa"), emit: contigs  // Emit renamed contigs
 
     script:
     """
@@ -58,11 +58,11 @@ process megahit {
     # Rename the contig headers
     python3 ${workflow.projectDir}/nextflow/bin/rename_contigs.py \\
         -i megahit_assembly/${id}/${id}.contigs.fa \\
-        -o megahit_assembly/${id}/${id}_metanextviro_contigs.fa \\
+        -o megahit_assembly/${id}/${id}_metanextviro_megahit_contigs.fa \\
         -s megahit
 
     # Verify renamed contigs
-    if [ ! -f "megahit_assembly/${id}/${id}_metanextviro_contigs.fa" ]; then
+    if [ ! -f "megahit_assembly/${id}/${id}_metanextviro_megahit_contigs.fa" ]; then
         echo " Error: Failed to rename contigs for sample: $id" >&2
         exit 1
     fi
