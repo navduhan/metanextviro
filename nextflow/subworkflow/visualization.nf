@@ -6,8 +6,7 @@ workflow VISUALIZATION {
     take:
         kraken2_reports_ch
         multiqc_report_ch
-        coverage_plots_ch
-        heatmap_ch
+        coverage_stats_ch
         checkv_results_ch
         virfinder_results_ch
 
@@ -16,8 +15,7 @@ workflow VISUALIZATION {
         html_report(
             kraken2_reports_ch,
             multiqc_report_ch,
-            coverage_plots_ch,
-            heatmap_ch,
+            coverage_stats_ch,
             checkv_results_ch,
             virfinder_results_ch
         )

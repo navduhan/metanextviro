@@ -6,10 +6,9 @@ process html_report {
     input:
         path kraken2_reports
         path multiqc_report
-        path coverage_plots
-        path heatmap
-        path(checkv_results)
-        path(virfinder_results)
+        path coverage_stats
+        path checkv_results
+        path virfinder_results
 
     output:
         path "final_report.html", emit: report
@@ -36,24 +35,15 @@ process html_report {
         echo '</ul>' >> final_report.html
     fi
 
-    # Coverage Plots
-    if [ -d "${coverage_plots}" ]; then
-        echo '<h2>Coverage Analysis</h2><ul>' >> final_report.html
-        for f in ${coverage_plots}/*; do
-            filename=\$(basename "\$f")
-            echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
-        done
-        echo '</ul>' >> final_report.html
+    # Coverage Stats
+    if [ -f "${coverage_stats}" ]; then
+        echo '<h2>Coverage Analysis</h2>' >> final_report.html
+        echo '<pre>' >> final_report.html
+        cat "${coverage_stats}" >> final_report.html
+        echo '</pre>' >> final_report.html
     fi
 
-    # Heatmap
-    if [ -f "${heatmap}" ]; then
-        echo '<h2>Comparative Analysis</h2>' >> final_report.html
-        filename=\$(basename "${heatmap}")
-        echo "<img src='\${filename}' alt='Heatmap' style='max-width:100%;'>" >> final_report.html
-    fi
-
-    # Optional: CheckV and VirFinder
+    # CheckV Results
     if [ -d "${checkv_results}" ]; then
         echo '<h2>CheckV Results</h2><ul>' >> final_report.html
         for f in ${checkv_results}/*; do
@@ -63,6 +53,7 @@ process html_report {
         echo '</ul>' >> final_report.html
     fi
 
+    # VirFinder Results
     if [ -d "${virfinder_results}" ]; then
         echo '<h2>VirFinder Results</h2><ul>' >> final_report.html
         for f in ${virfinder_results}/*; do

@@ -9,6 +9,7 @@ include { TAXONOMIC_PROFILING } from '../subworkflow/taxonomic_profiling.nf'
 include { VIRAL_ANALYSIS } from '../subworkflow/viral_analysis.nf'
 include { CONTIG_ORGANIZATION } from '../subworkflow/organize_contigs.nf'
 include { VISUALIZATION } from '../subworkflow/visualization.nf'
+include { coverage } from '../modules/coverage.nf'
 
 workflow metanextviro {
     take:
@@ -30,18 +31,20 @@ workflow metanextviro {
         TAXONOMIC_PROFILING(ASSEMBLY.out.contigs)
         VIRAL_ANALYSIS(ASSEMBLY.out.contigs)
         
+        // Run coverage analysis
+        coverage(ASSEMBLY.out.contigs, TRIMMING.out.clean_reads1, TRIMMING.out.clean_reads2)
+        
         // Pass BLAST results and contigs separately to CONTIG_ORGANIZATION
         CONTIG_ORGANIZATION(
             BLAST_ANNOTATION.out.blastn_results_viruses,
             ASSEMBLY.out.contigs
         )
         
-        // Pass all required inputs to VISUALIZATION
+        // Pass available inputs to VISUALIZATION
         VISUALIZATION(
             TAXONOMIC_PROFILING.out.kraken2_reports,
             QUALITY.out.multiqc_report,
-            ASSEMBLY.out.coverage_plots,
-            ASSEMBLY.out.heatmap,
+            coverage.out.stats,
             VIRAL_ANALYSIS.out.checkv_report,
             VIRAL_ANALYSIS.out.virfinder_results
         )
@@ -57,6 +60,7 @@ workflow metanextviro {
         
         // Assembly outputs
         assembly_results = ASSEMBLY.out.contigs
+        assembly_stats = ASSEMBLY.out.assembly_stats
         
         // BLAST annotation outputs
         blastn_viruses = BLAST_ANNOTATION.out.blastn_results_viruses
@@ -71,6 +75,10 @@ workflow metanextviro {
         // Viral analysis outputs
         checkv_report = VIRAL_ANALYSIS.out.checkv_report
         virfinder_results = VIRAL_ANALYSIS.out.virfinder_results
+        
+        // Coverage outputs
+        coverage_bam = coverage.out.bam
+        coverage_stats = coverage.out.stats
         
         // Contig organization outputs
         organized_dirs = CONTIG_ORGANIZATION.out.organized_dirs
