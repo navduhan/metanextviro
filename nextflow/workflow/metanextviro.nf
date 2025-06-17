@@ -5,6 +5,10 @@ include { QUALITY } from '../subworkflow/quality.nf'
 include { TRIMMING } from '../subworkflow/trimming.nf'
 include { ASSEMBLY } from '../subworkflow/assembly.nf'
 include { BLAST_ANNOTATION } from '../subworkflow/blast_annotation.nf'
+include { TAXONOMIC_PROFILING } from '../subworkflow/taxonomic_profiling.nf'
+include { VIRAL_ANALYSIS } from '../subworkflow/viral_analysis.nf'
+include { CONTIG_ORGANIZATION } from '../subworkflow/organize_contigs.nf'
+include { VISUALIZATION } from '../subworkflow/visualization.nf'
 
 workflow metanextviro {
     take:
@@ -23,11 +27,41 @@ workflow metanextviro {
         TRIMMING(ch_reads1, ch_reads2)
         ASSEMBLY(TRIMMING.out.clean_reads1, TRIMMING.out.clean_reads2)
         BLAST_ANNOTATION(ASSEMBLY.out.contigs)
+        TAXONOMIC_PROFILING(ASSEMBLY.out.contigs)
+        VIRAL_ANALYSIS(ASSEMBLY.out.contigs)
+        CONTIG_ORGANIZATION(BLAST_ANNOTATION.out.blastn_results_viruses, ASSEMBLY.out.contigs)
+        VISUALIZATION(VIRAL_ANALYSIS.out.checkv_output, VIRAL_ANALYSIS.out.virfinder_output)
 
     emit:
+        // Quality control outputs
         quality_reports = QUALITY.out.reports
+        multiqc_report = QUALITY.out.multiqc_report
+        
+        // Trimming outputs
         trimmed_reads1 = TRIMMING.out.clean_reads1
         trimmed_reads2 = TRIMMING.out.clean_reads2
+        
+        // Assembly outputs
         assembly_results = ASSEMBLY.out.contigs
-        blast_results = BLAST_ANNOTATION.out.results
+        
+        // BLAST annotation outputs
+        blastn_viruses = BLAST_ANNOTATION.out.blastn_results_viruses
+        blastn_nt = BLAST_ANNOTATION.out.blastn_results_nt
+        blastx_nr = BLAST_ANNOTATION.out.blastx_results_nr
+        
+        // Taxonomic profiling outputs
+        kraken2_reports = TAXONOMIC_PROFILING.out.kraken2_reports
+        kraken2_outputs = TAXONOMIC_PROFILING.out.kraken2_outputs
+        krona_html = TAXONOMIC_PROFILING.out.krona_html
+        
+        // Viral analysis outputs
+        checkv_output = VIRAL_ANALYSIS.out.checkv_output
+        virfinder_output = VIRAL_ANALYSIS.out.virfinder_output
+        
+        // Contig organization outputs
+        organized_dirs = CONTIG_ORGANIZATION.out.organized_dirs
+        organization_summaries = CONTIG_ORGANIZATION.out.summaries
+        
+        // Visualization outputs
+        html_report = VISUALIZATION.out.html
 }

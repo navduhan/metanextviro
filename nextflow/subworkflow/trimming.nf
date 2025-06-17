@@ -14,19 +14,19 @@ process TRIMMING {
         path "*_2.fastq.gz", emit: clean_reads2
 
     script:
-        if (params.trimmer == 'fastp') {
+        if (params.trimming_tool == 'fastp') {
             """
             fastp -i ${reads1} -I ${reads2} -o trimmed_1.fastq.gz -O trimmed_2.fastq.gz
             """
-        } else if (params.trimmer == 'flexbar') {
+        } else if (params.trimming_tool == 'flexbar') {
             """
             flexbar -r ${reads1} -p ${reads2} -t trimmed
             """
-        } else if (params.trimmer == 'trim_galore') {
+        } else if (params.trimming_tool == 'trim_galore') {
             """
             trim_galore --paired ${reads1} ${reads2}
             """
         } else {
-            error "Invalid trimmer specified: ${params.trimmer}. Choose from: fastp, flexbar, trim_galore"
+            error "Invalid trimming tool specified: ${params.trimming_tool}. Choose from: fastp, flexbar, trim_galore"
         }
 } 

@@ -15,50 +15,56 @@ def validateFile(path, fileType) {
 
 workflow INPUT_PARSER {
     take:
-        samplesheet
+    samplesheet
 
     main:
-        def file_extensions = ["csv", "tsv", "xls", "xlsx"]
+    def file_extensions = ["csv", "tsv", "xls", "xlsx"]
 
-        if (!hasExtension(params.input, file_extensions)) {
-            exit 1, "Unsupported input format: ${params.input}. Supported formats are CSV, TSV, XLS, XLSX."
-        }
+    if (!hasExtension(params.input, file_extensions)) {
+        exit 1, "Unsupported input format: ${params.input}. Supported formats are CSV, TSV, XLS, XLSX."
+    }
 
-        // Process file based on its type
-        if (hasExtension(params.input, "csv")) {
-            ch_input_rows = samplesheet.splitCsv(header: true)
-        } else if (hasExtension(params.input, "tsv")) {
-            ch_input_rows = samplesheet.splitCsv(header: true, sep: '\t')
-        } else if (hasExtension(params.input, ["xls", "xlsx"])) {
-            ch_input_rows = samplesheet
-                .exec {
-                    """
-                    # Use Python or a custom script to convert Excel to CSV
-                    python3 - <<EOF
-                    import pandas as pd
-                    df = pd.read_excel("$samplesheet")
-                    df.to_csv("temp.csv", index=False)
-                    EOF
-                    """
-                }
-                .splitCsv(header: true)
-        }
+    ch_input_rows = Channel.from(samplesheet)
 
-        // Validate and map input rows
-        ch_input_rows = ch_input_rows.map { row ->
-            def id = row.id ?: exit(1, "Invalid input samplesheet: 'id' column is missing.")
-            def reads1 = validateFile(row.reads1, "reads1")
-            def reads2 = validateFile(row.reads2, "reads2")
-            
-            // Return the parsed values
-            [id, reads1, reads2]
-        }
+    // Process file based on its type
+    if (hasExtension(params.input, "csv")) {
+        ch_input_rows = ch_input_rows.splitCsv(header: true)
+    } else if (hasExtension(params.input, "tsv")) {
+        ch_input_rows = ch_input_rows.splitCsv(header: true, sep: '\t')
+    } else if (hasExtension(params.input, ["xls", "xlsx"])) {
+        ch_input_rows = ch_input_rows
+            .exec {
+                """
+                # Use Python or a custom script to convert Excel to CSV
+                python3 - <<EOF
+                import pandas as pd
+                df = pd.read_excel("$samplesheet")
+                df.to_csv("temp.csv", index=False)
+                EOF
+                """
+            }
+            .splitCsv(header: true)
+    }
 
-        // Split the main channel into separate channels for reads1, reads2
-        reads1 = ch_input_rows.map { id, reads1, _reads2_unused -> [id, reads1] }
-        reads2 = ch_input_rows.map { id, _reads1_unused, reads2 -> [id, reads2] }
+    // Validate and map input rows
+    ch_input_rows = ch_input_rows.map { row ->
+        def id = row.id ?: exit(1, "Invalid input samplesheet: 'id' column is missing.")
+        def reads1 = validateFile(row.reads1, "reads1")
+        def reads2 = validateFile(row.reads2, "reads2")
+        
+        // Return the parsed values
+        [id, reads1, reads2]
+    }
+
+
+   // Split the main channel into separate channels for reads1, reads2
+    reads1 = ch_input_rows.map { id, reads1, _reads2_unused -> [id, reads1] }
+    reads2 = ch_input_rows.map { id, _reads1_unused, reads2 -> [id, reads2] }
+
+
 
     emit:
-        reads1
-        reads2
+    reads1
+    reads2
+    
 }
