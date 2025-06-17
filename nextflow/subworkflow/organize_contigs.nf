@@ -30,11 +30,10 @@ workflow CONTIG_ORGANIZATION {
         contigs_ch         // Channel: [ val(meta), path(contigs) ]
 
     main:
-        // Combine channels by meta.id
-        combined_ch = blast_results_ch.combine(contigs_ch, by: 0)
+        
         
         // Organize contigs by taxonomy
-        ORGANIZE_CONTIGS(combined_ch)
+        ORGANIZE_CONTIGS(blast_results_ch, contigs_ch)
 
     emit:
         organized_dirs = ORGANIZE_CONTIGS.out.organized_dir
