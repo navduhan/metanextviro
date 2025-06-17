@@ -30,7 +30,8 @@ process html_report {
     if [ -d "${kraken2_reports}" ]; then
         echo '<h2>Kraken2 Classification</h2><ul>' >> final_report.html
         for f in ${kraken2_reports}/*; do
-            echo "<li><a href='$f'>$(basename $f)</a></li>" >> final_report.html
+            filename=\$(basename "\$f")
+            echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
         done
         echo '</ul>' >> final_report.html
     fi
@@ -39,7 +40,8 @@ process html_report {
     if [ -d "${coverage_plots}" ]; then
         echo '<h2>Coverage Analysis</h2><ul>' >> final_report.html
         for f in ${coverage_plots}/*; do
-            echo "<li><a href='$f'>$(basename $f)</a></li>" >> final_report.html
+            filename=\$(basename "\$f")
+            echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
         done
         echo '</ul>' >> final_report.html
     fi
@@ -47,14 +49,16 @@ process html_report {
     # Heatmap
     if [ -f "${heatmap}" ]; then
         echo '<h2>Comparative Analysis</h2>' >> final_report.html
-        echo "<img src='$(basename ${heatmap})' alt='Heatmap' style='max-width:100%;'>" >> final_report.html
+        filename=\$(basename "${heatmap}")
+        echo "<img src='\${filename}' alt='Heatmap' style='max-width:100%;'>" >> final_report.html
     fi
 
     # Optional: CheckV and VirFinder
     if [ -d "${checkv_results}" ]; then
         echo '<h2>CheckV Results</h2><ul>' >> final_report.html
         for f in ${checkv_results}/*; do
-            echo "<li><a href='$f'>$(basename $f)</a></li>" >> final_report.html
+            filename=\$(basename "\$f")
+            echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
         done
         echo '</ul>' >> final_report.html
     fi
@@ -62,7 +66,8 @@ process html_report {
     if [ -d "${virfinder_results}" ]; then
         echo '<h2>VirFinder Results</h2><ul>' >> final_report.html
         for f in ${virfinder_results}/*; do
-            echo "<li><a href='$f'>$(basename $f)</a></li>" >> final_report.html
+            filename=\$(basename "\$f")
+            echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
         done
         echo '</ul>' >> final_report.html
     fi
