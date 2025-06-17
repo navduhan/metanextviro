@@ -30,7 +30,7 @@ workflow metanextviro {
         TAXONOMIC_PROFILING(ASSEMBLY.out.contigs)
         VIRAL_ANALYSIS(ASSEMBLY.out.contigs)
         CONTIG_ORGANIZATION(BLAST_ANNOTATION.out.blastn_results_viruses, ASSEMBLY.out.contigs)
-        VISUALIZATION(VIRAL_ANALYSIS.out.checkv_output, VIRAL_ANALYSIS.out.virfinder_output)
+        VISUALIZATION(VIRAL_ANALYSIS.out.checkv_report, VIRAL_ANALYSIS.out.virfinder_output)
 
     emit:
         // Quality control outputs
@@ -55,7 +55,7 @@ workflow metanextviro {
         krona_html = TAXONOMIC_PROFILING.out.krona_html
         
         // Viral analysis outputs
-        checkv_output = VIRAL_ANALYSIS.out.checkv_output
+        checkv_report = VIRAL_ANALYSIS.out.checkv_report
         virfinder_output = VIRAL_ANALYSIS.out.virfinder_output
         
         // Contig organization outputs
