@@ -12,9 +12,8 @@ workflow QUALITY {
         // Run FastQC on both read files
         fastqc(reads1_ch.join(reads2_ch))
         
-        
         // Run MultiQC on all FastQC results
-        multiqc()
+        multiqc(fastqc.out.html)
 
     emit:
         reports = fastqc.out.html
