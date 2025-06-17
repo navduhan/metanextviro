@@ -1,7 +1,8 @@
 // Author: Naveen Duhan
 
 include { INPUT_PARSER } from '../subworkflow/input_parser'
-include { PREPROCESSING } from '../subworkflow/preprocessing.nf'
+include { QUALITY } from '../subworkflow/quality.nf'
+include { TRIMMING } from '../subworkflow/trimming.nf'
 include { ASSEMBLY } from '../subworkflow/assembly.nf'
 include { BLAST_ANNOTATION } from '../subworkflow/blast_annotation.nf'
 
@@ -18,14 +19,15 @@ workflow metanextviro {
         ch_reads2 = INPUT_PARSER.out.reads2
 
         // Run pipeline steps
-        PREPROCESSING(ch_reads1, ch_reads2)
-        ASSEMBLY(PREPROCESSING.out.trimmed_reads1, PREPROCESSING.out.trimmed_reads2)
+        QUALITY(ch_reads1, ch_reads2)
+        TRIMMING(ch_reads1, ch_reads2)
+        ASSEMBLY(TRIMMING.out.clean_reads1, TRIMMING.out.clean_reads2)
         BLAST_ANNOTATION(ASSEMBLY.out.contigs)
 
     emit:
-        quality_reports = PREPROCESSING.out.quality_reports
-        trimmed_reads1 = PREPROCESSING.out.trimmed_reads1
-        trimmed_reads2 = PREPROCESSING.out.trimmed_reads2
+        quality_reports = QUALITY.out.reports
+        trimmed_reads1 = TRIMMING.out.clean_reads1
+        trimmed_reads2 = TRIMMING.out.clean_reads2
         assembly_results = ASSEMBLY.out.contigs
         blast_results = BLAST_ANNOTATION.out.results
 }
