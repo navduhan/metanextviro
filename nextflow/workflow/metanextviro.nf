@@ -31,10 +31,10 @@ workflow metanextviro {
         VIRAL_ANALYSIS(ASSEMBLY.out.contigs)
         
         // Pass BLAST results and contigs separately to CONTIG_ORGANIZATION
-        CONTIG_ORGANIZATION(
-            BLAST_ANNOTATION.out.blastn_results_viruses,
-            ASSEMBLY.out.contigs
-        )
+        // CONTIG_ORGANIZATION(
+        //     BLAST_ANNOTATION.out.blastn_results_viruses,
+        //     ASSEMBLY.out.contigs
+        // )
         
         VISUALIZATION(VIRAL_ANALYSIS.out.checkv_report, VIRAL_ANALYSIS.out.virfinder_results)
 
@@ -64,9 +64,9 @@ workflow metanextviro {
         checkv_report = VIRAL_ANALYSIS.out.checkv_report
         virfinder_results = VIRAL_ANALYSIS.out.virfinder_results
         
-        // Contig organization outputs
-        organized_dirs = CONTIG_ORGANIZATION.out.organized_dirs
-        organization_summaries = CONTIG_ORGANIZATION.out.summaries
+        // // Contig organization outputs
+        // organized_dirs = CONTIG_ORGANIZATION.out.organized_dirs
+        // organization_summaries = CONTIG_ORGANIZATION.out.summaries
         
         // Visualization outputs
         html_report = VISUALIZATION.out.html
