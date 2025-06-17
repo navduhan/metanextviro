@@ -12,5 +12,5 @@ workflow VIRAL_ANALYSIS {
 
     emit:
         checkv_report = checkv.out.report
-        virfinder_output = virfinder.out.virfinder_output
+        virfinder_results = virfinder.out.results
 } 
