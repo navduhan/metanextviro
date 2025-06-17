@@ -8,8 +8,8 @@ process html_report {
         path multiqc_report
         path coverage_plots
         path heatmap
-        path(checkv_results, optional: true)
-        path(virfinder_results, optional: true)
+        path(checkv_results)
+        path(virfinder_results)
 
     output:
         path "final_report.html", emit: report
