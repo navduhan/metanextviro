@@ -30,10 +30,11 @@ workflow metanextviro {
         TAXONOMIC_PROFILING(ASSEMBLY.out.contigs)
         VIRAL_ANALYSIS(ASSEMBLY.out.contigs)
         
-        // Combine BLAST results and contigs for organization
-        blast_results_ch = BLAST_ANNOTATION.out.blastn_results_viruses
-        contigs_ch = ASSEMBLY.out.contigs
-        CONTIG_ORGANIZATION(blast_results_ch, contigs_ch)
+        // Pass BLAST results and contigs separately to CONTIG_ORGANIZATION
+        CONTIG_ORGANIZATION(
+            BLAST_ANNOTATION.out.blastn_results_viruses,
+            ASSEMBLY.out.contigs
+        )
         
         VISUALIZATION(VIRAL_ANALYSIS.out.checkv_report, VIRAL_ANALYSIS.out.virfinder_results)
 
