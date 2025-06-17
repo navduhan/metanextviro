@@ -27,11 +27,8 @@ workflow metanextviro {
 
         // Prepare trimmed reads for taxonomic profiling
         trimmed_reads_ch = PREPROCESSING.out.trimmed_reads1
-            .combine(PREPROCESSING.out.trimmed_reads2)
-            .map { id1, r1, id2, r2 ->
-                assert id1 == id2 : "Sample IDs do not match: $id1 != $id2"
-                tuple(id1, r1, r2)
-            }
+            .join(PREPROCESSING.out.trimmed_reads2)
+            .map { id, r1, r2 -> tuple(id, r1, r2) }
 
         // Taxonomic profiling (Kraken2 + Krona)
         TAXONOMIC_PROFILING(trimmed_reads_ch)
@@ -51,11 +48,9 @@ workflow metanextviro {
 
         // Coverage analysis for visualization
         coverage_input_ch = ASSEMBLY.out.contigs
-            .combine(PREPROCESSING.out.trimmed_reads1, PREPROCESSING.out.trimmed_reads2)
-            .map { tuple1, r1, r2 ->
-                def (id, contigs) = tuple1
-                tuple(id, contigs, r1, r2)
-            }
+            .join(PREPROCESSING.out.trimmed_reads1)
+            .join(PREPROCESSING.out.trimmed_reads2)
+            .map { id, contigs, r1, r2 -> tuple(id, contigs, r1, r2) }
         coverage(coverage_input_ch)
 
         // Visualization
