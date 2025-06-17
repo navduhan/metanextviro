@@ -10,8 +10,8 @@ workflow QUALITY {
 
     main:
         // Run FastQC on both read files
-        fastqc(reads1_ch)
-        fastqc(reads2_ch)
+        fastqc(reads1_ch.join(reads2_ch))
+        
         
         // Run MultiQC on all FastQC results
         multiqc()
