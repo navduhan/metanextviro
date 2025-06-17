@@ -12,5 +12,5 @@ workflow QUALITY {
         fastqc(reads1_ch.join(reads2_ch))
 
     emit:
-        reports = fastqc.out.html
+        reports = fastqc.out.fastqc_report
 } 
