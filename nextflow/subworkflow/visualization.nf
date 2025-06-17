@@ -5,7 +5,7 @@ include { html_report } from '../modules/html_report.nf'
 workflow VISUALIZATION {
     take:
         kraken2_reports_ch
-        multiqc_report_ch
+        fastqc_reports_ch
         coverage_stats_ch
         checkv_results_ch
         virfinder_results_ch
@@ -14,7 +14,7 @@ workflow VISUALIZATION {
         // Generate HTML report
         html_report(
             kraken2_reports_ch,
-            multiqc_report_ch,
+            fastqc_reports_ch,
             coverage_stats_ch,
             checkv_results_ch,
             virfinder_results_ch

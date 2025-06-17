@@ -5,7 +5,7 @@ process html_report {
 
     input:
         path kraken2_reports
-        path multiqc_report
+        path fastqc_reports
         path coverage_stats
         path checkv_results
         path virfinder_results
@@ -19,10 +19,14 @@ process html_report {
     echo '<html><head><title>MetaNextViro Report</title></head><body>' > final_report.html
     echo '<h1>MetaNextViro Analysis Report</h1>' >> final_report.html
 
-    # MultiQC Report
-    if [ -f "${multiqc_report}" ]; then
-        echo '<h2>MultiQC Report</h2>' >> final_report.html
-        echo '<iframe src="multiqc_report.html" width="100%" height="800px"></iframe>' >> final_report.html
+    # FastQC Reports
+    if [ -d "${fastqc_reports}" ]; then
+        echo '<h2>FastQC Reports</h2><ul>' >> final_report.html
+        for f in ${fastqc_reports}/*; do
+            filename=\$(basename "\$f")
+            echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
+        done
+        echo '</ul>' >> final_report.html
     fi
 
     # Kraken2 Results

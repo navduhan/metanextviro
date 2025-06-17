@@ -46,7 +46,7 @@ workflow metanextviro {
         // Pass available inputs to VISUALIZATION
         VISUALIZATION(
             TAXONOMIC_PROFILING.out.kraken2_reports,
-            QUALITY.out.multiqc_report,
+            QUALITY.out.reports,
             coverage.out.stats,
             VIRAL_ANALYSIS.out.checkv_report,
             VIRAL_ANALYSIS.out.virfinder_results
@@ -55,7 +55,6 @@ workflow metanextviro {
     emit:
         // Quality control outputs
         quality_reports = QUALITY.out.reports
-        multiqc_report = QUALITY.out.multiqc_report
         
         // Trimming outputs
         trimmed_reads1 = TRIMMING.out.clean_reads1
