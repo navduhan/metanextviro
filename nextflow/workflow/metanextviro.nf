@@ -26,7 +26,10 @@ workflow metanextviro {
         // Run pipeline steps
         QUALITY(ch_reads1, ch_reads2)
         TRIMMING(ch_reads1, ch_reads2)
+        
+        // Run assembly with selected assembler
         ASSEMBLY(TRIMMING.out.clean_reads1, TRIMMING.out.clean_reads2)
+        
         BLAST_ANNOTATION(ASSEMBLY.out.contigs)
         TAXONOMIC_PROFILING(ASSEMBLY.out.contigs)
         VIRAL_ANALYSIS(ASSEMBLY.out.contigs)
@@ -62,7 +65,6 @@ workflow metanextviro {
         
         // Assembly outputs
         assembly_results = ASSEMBLY.out.contigs
-        assembly_stats = ASSEMBLY.out.assembly_stats
         
         // BLAST annotation outputs
         blastn_viruses = BLAST_ANNOTATION.out.blastn_results_viruses
