@@ -1,0 +1,35 @@
+name: metanextviro
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - nextflow
+  - openjdk=11
+  - fastqc
+  - multiqc
+  - fastp
+  - flexbar
+  - trim-galore
+  - megahit
+  - spades
+  - blast
+  - diamond
+  - kraken2
+  - quast
+  - bowtie2
+  - samtools
+  - bedtools
+  - ete3
+  - biopython
+  - pandas
+  - matplotlib
+  - seaborn
+  - r-base
+  - r-virfinder
+  - viga
+  - checkv
+  - pip
+  - pip:
+      - pathlib 

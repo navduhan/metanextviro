@@ -16,8 +16,18 @@ col = [
 def seq2dict(fasta_file):
     """Convert a FASTA file to a dictionary with query IDs as keys and sequences as values."""
     seq_dict = {}
+    long_seqs = []
     for record in SeqIO.parse(fasta_file, 'fasta'):
-        seq_dict[record.id] = str(record.seq)
+        if len(str(record.seq)) > 30000:
+            long_seqs.append(record.id)
+            seq_dict[record.id] = "Sequence length > 30000 bp. Please check contig file."
+        else:
+            seq_dict[record.id] = str(record.seq)
+    
+    if long_seqs:
+        print(f"\nWarning: The following sequences are longer than 30000 bp and their sequences have been replaced with a message:")
+        for seq_id in long_seqs:
+            print(f"- {seq_id}")
     return seq_dict
 
 def get_single_taxonomy_info(tax_id):
@@ -66,7 +76,7 @@ def process_blast_results(blast_file, fasta_file, prefix, suffix):
 
     # Map sequences and calculate sequence lengths
     df['sequence'] = df['query_id'].map(seqd)
-    df['sequence_length'] = df['sequence'].apply(lambda x: len(x) if isinstance(x, str) else 0)
+    df['sequence_length'] = df['sequence'].apply(lambda x: len(x) if isinstance(x, str) and not x.startswith("Sequence length > 30000") else 0)
 
     # Sort and select the best hits
     df_sorted = df.sort_values(by=['query_id', 'alignment_length', 'bit_score'], ascending=[True, False, False])

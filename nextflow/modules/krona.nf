@@ -1,5 +1,6 @@
 // Author: Naveen Duhan
 
+// Krona taxonomic visualization
 process krona {
     tag "$id"  // Tag each task with the sample ID for traceability
 
@@ -23,10 +24,10 @@ process krona {
     echo "Input Kraken2 report: ${kraken_report}"
 
     # Generate Krona HTML visualization
-    ktImportTaxonomy \\
-        -t 5 \\
-        -m 3 \\
-        -o krona_results/${id}_krona.html \\
+    ktImportTaxonomy \
+        -t 5 \
+        -m 3 \
+        -o krona_results/${id}_krona.html \
         ${kraken_report}
 
     # Verify the output file
