@@ -13,7 +13,6 @@ The pipeline integrates state-of-the-art tools for:
 - **Assembly** of metagenomic data (MEGAHIT, metaSPAdes, or hybrid)
 - **Taxonomic classification** with Kraken2 and visualization with Krona
 - **Viral genome completion and quality assessment** (CheckV)
-- **Viral genome annotation** (VIGA)
 - **Viral sequence identification** (VirFinder)
 - **BLAST-based annotation** for both viral and bacterial contigs
 - **Automated organization of contigs** by taxonomy and family
@@ -35,7 +34,7 @@ The pipeline is highly portable and reproducible, supporting Conda, Docker, and 
 - Multiple assembly options (MEGAHIT, metaSPAdes, or hybrid)
 - BLAST-based and Kraken2-based taxonomic annotation
 - Automated organization of contigs by taxonomy and family
-- Viral genome completion (CheckV), annotation (VIGA), and classification (VirFinder)
+- Viral genome completion (CheckV) and classification (VirFinder)
 - Coverage analysis and visualization
 - Comparative heatmap visualization
 - Comprehensive HTML report aggregating all results
@@ -55,7 +54,7 @@ All dependencies can be installed using the provided `environment.yml` file or a
 - FastQC, MultiQC, fastp, flexbar, trim-galore
 - MEGAHIT, SPAdes, BLAST+, DIAMOND, Kraken2, QUAST
 - Bowtie2, Samtools, Bedtools
-- CheckV, VIGA, VirFinder (R)
+- CheckV, VirFinder (R)
 - Python: biopython, pandas, matplotlib, seaborn, ete3, pathlib
 - R: r-base, r-virfinder
 
@@ -231,7 +230,6 @@ nextflow run main.nf \
    - Taxonomic annotation of contigs
 6. **Viral Analysis**
    - CheckV genome completion
-   - VIGA annotation
    - VirFinder classification
 7. **Contig Organization**
    - Organize contigs by taxonomy and family
@@ -256,7 +254,6 @@ results/
 ├── krona_results/        # Krona HTML visualizations
 ├── organized_contigs/    # Organized contigs by taxonomy
 ├── checkv/               # CheckV viral genome completion
-├── viga/                 # VIGA viral annotation
 ├── virfinder/            # VirFinder results
 ├── coverage/             # BAM files and coverage stats
 ├── coverage_plots/       # Coverage plots (PNG)

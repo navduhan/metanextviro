@@ -4,57 +4,67 @@ process html_report {
     publishDir "${params.outdir}/final_report", mode: 'copy', overwrite: true
 
     input:
-        path krona_html
+        path kraken2_reports
         path multiqc_report
         path coverage_plots
         path heatmap
-        path checkv_report optional true
-        path viga_annotation optional true
+        path checkv_results optional true
         path virfinder_results optional true
 
     output:
-        path "final_report.html", emit: html
+        path "final_report.html", emit: report
 
-    script:
+    shell:
     """
+    #!/bin/bash
     echo '<html><head><title>MetaNextViro Report</title></head><body>' > final_report.html
-    echo '<h1>MetaNextViro Summary Report</h1>' >> final_report.html
+    echo '<h1>MetaNextViro Analysis Report</h1>' >> final_report.html
 
-    # Krona
-    echo '<h2>Krona Plot</h2><iframe src="'${krona_html}'" width="800" height="600"></iframe>' >> final_report.html
+    # MultiQC Report
+    if [ -f "${multiqc_report}" ]; then
+        echo '<h2>MultiQC Report</h2>' >> final_report.html
+        echo '<iframe src="multiqc_report.html" width="100%" height="800px"></iframe>' >> final_report.html
+    fi
 
-    # MultiQC
-    echo '<h2>MultiQC Report</h2><iframe src="'${multiqc_report}'" width="800" height="600"></iframe>' >> final_report.html
+    # Kraken2 Results
+    if [ -d "${kraken2_reports}" ]; then
+        echo '<h2>Kraken2 Classification</h2><ul>' >> final_report.html
+        for f in ${kraken2_reports}/*; do
+            echo "<li><a href='$f'>$(basename $f)</a></li>" >> final_report.html
+        done
+        echo '</ul>' >> final_report.html
+    fi
 
     # Coverage Plots
-    echo '<h2>Coverage Plots</h2>' >> final_report.html
-    for img in ${coverage_plots}/*.png; do
-      echo "<img src=\"$img\" width=\"800\">" >> final_report.html
-    done
+    if [ -d "${coverage_plots}" ]; then
+        echo '<h2>Coverage Analysis</h2><ul>' >> final_report.html
+        for f in ${coverage_plots}/*; do
+            echo "<li><a href='$f'>$(basename $f)</a></li>" >> final_report.html
+        done
+        echo '</ul>' >> final_report.html
+    fi
 
     # Heatmap
-    echo '<h2>Comparative Heatmap</h2><img src="'${heatmap}'" width="800">' >> final_report.html
-
-    # Optional: CheckV, VIGA, VirFinder
-    if [ -d "${checkv_report}" ]; then
-      echo '<h2>CheckV Report</h2><ul>' >> final_report.html
-      for f in ${checkv_report}/*; do
-        echo "<li><a href=\"$f\">$(basename $f)</a></li>" >> final_report.html
-      done
-      echo '</ul>' >> final_report.html
+    if [ -f "${heatmap}" ]; then
+        echo '<h2>Comparative Analysis</h2>' >> final_report.html
+        echo "<img src='$(basename ${heatmap})' alt='Heatmap' style='max-width:100%;'>" >> final_report.html
     fi
 
-    if [ -d "${viga_annotation}" ]; then
-      echo '<h2>VIGA Annotation</h2><ul>' >> final_report.html
-      for f in ${viga_annotation}/*; do
-        echo "<li><a href=\"$f\">$(basename $f)</a></li>" >> final_report.html
-      done
-      echo '</ul>' >> final_report.html
+    # Optional: CheckV and VirFinder
+    if [ -d "${checkv_results}" ]; then
+        echo '<h2>CheckV Results</h2><ul>' >> final_report.html
+        for f in ${checkv_results}/*; do
+            echo "<li><a href='$f'>$(basename $f)</a></li>" >> final_report.html
+        done
+        echo '</ul>' >> final_report.html
     fi
 
-    if [ -f "${virfinder_results}" ]; then
-      echo '<h2>VirFinder Results</h2>' >> final_report.html
-      echo '<a href="'${virfinder_results}'">Download VirFinder Results</a>' >> final_report.html
+    if [ -d "${virfinder_results}" ]; then
+        echo '<h2>VirFinder Results</h2><ul>' >> final_report.html
+        for f in ${virfinder_results}/*; do
+            echo "<li><a href='$f'>$(basename $f)</a></li>" >> final_report.html
+        done
+        echo '</ul>' >> final_report.html
     fi
 
     echo '</body></html>' >> final_report.html

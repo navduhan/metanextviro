@@ -58,12 +58,7 @@ workflow METANEXTVIRO {
 
         // Visualization
         VISUALIZATION(
-            TAXONOMIC_PROFILING.out.kraken2_reports,
-            PREPROCESSING.out.multiqc_report,
-            coverage.out.bam,
-            matrix_ch, // <-- Replace with your comparative matrix channel
-            VIRAL_ANALYSIS.out.checkv_report,
-            VIRAL_ANALYSIS.out.viga_annotation,
+            VIRAL_ANALYSIS.out.checkv_results,
             VIRAL_ANALYSIS.out.virfinder_results
         )
 
@@ -75,13 +70,9 @@ workflow METANEXTVIRO {
         kraken2_reports = TAXONOMIC_PROFILING.out.kraken2_reports
         kraken2_outputs = TAXONOMIC_PROFILING.out.kraken2_outputs
         krona_html = TAXONOMIC_PROFILING.out.krona_html
-        checkv_report = VIRAL_ANALYSIS.out.checkv_report
-        viga_annotation = VIRAL_ANALYSIS.out.viga_annotation
+        checkv_results = VIRAL_ANALYSIS.out.checkv_results
         virfinder_results = VIRAL_ANALYSIS.out.virfinder_results
         organized_contigs = CONTIG_ORGANIZATION.out.organized_dirs
         taxonomy_summaries = CONTIG_ORGANIZATION.out.summaries
-        visualization_krona_html = VISUALIZATION.out.krona_html
-        visualization_coverage_plots = VISUALIZATION.out.coverage_plots
-        visualization_heatmap_img = VISUALIZATION.out.heatmap_img
         visualization_html = VISUALIZATION.out.html
 }
