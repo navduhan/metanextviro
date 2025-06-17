@@ -2,7 +2,7 @@
 
 include { fastp } from '../modules/fastp.nf'
 include { flexbar } from '../modules/flexbar.nf'
-include { trim_galore } from '../modules/trim_galore.nf'
+include { trim_galore } from '../modules/trim-galore.nf'
 
 process TRIMMING {
     input:
