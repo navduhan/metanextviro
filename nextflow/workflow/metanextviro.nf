@@ -32,7 +32,10 @@ workflow metanextviro {
         VIRAL_ANALYSIS(ASSEMBLY.out.contigs)
         
         // Run coverage analysis
-        coverage(ASSEMBLY.out.contigs, TRIMMING.out.clean_reads1, TRIMMING.out.clean_reads2)
+        coverage_input = ASSEMBLY.out.contigs
+            .combine(TRIMMING.out.clean_reads1)
+            .combine(TRIMMING.out.clean_reads2)
+        coverage(coverage_input)
         
         // Pass BLAST results and contigs separately to CONTIG_ORGANIZATION
         CONTIG_ORGANIZATION(
