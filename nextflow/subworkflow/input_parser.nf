@@ -24,15 +24,13 @@ workflow INPUT_PARSER {
             exit 1, "Unsupported input format: ${params.input}. Supported formats are CSV, TSV, XLS, XLSX."
         }
 
-        ch_input_rows = Channel.from(samplesheet)
-
         // Process file based on its type
         if (hasExtension(params.input, "csv")) {
-            ch_input_rows = ch_input_rows.splitCsv(header: true)
+            ch_input_rows = samplesheet.splitCsv(header: true)
         } else if (hasExtension(params.input, "tsv")) {
-            ch_input_rows = ch_input_rows.splitCsv(header: true, sep: '\t')
+            ch_input_rows = samplesheet.splitCsv(header: true, sep: '\t')
         } else if (hasExtension(params.input, ["xls", "xlsx"])) {
-            ch_input_rows = ch_input_rows
+            ch_input_rows = samplesheet
                 .exec {
                     """
                     # Use Python or a custom script to convert Excel to CSV

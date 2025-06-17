@@ -5,11 +5,10 @@ nextflow.enable.dsl = 2
 
 // Author: Naveen Duhan
 
-
 include { metanextviro } from './nextflow/workflow/metanextviro.nf'
+
 // Validate parameters before running workflows
 workflow {
-
     // Display help message if requested
     if (params.help) {
         helpMSG()
@@ -21,7 +20,7 @@ workflow {
         error 'Error: Input samplesheet not specified! Use --input <samplesheet> to provide input.'
     }
 
-        // Check if input files exist
+    // Check if input files exist
     def checkPathParamList = [ params.input, params.adapters ]
     checkPathParamList.each { param -> 
         if (param) { 
@@ -29,17 +28,12 @@ workflow {
         } 
     }
 
-    // Check mandatory parameters
-    if (params.input) { 
-        ch_input = file(params.input) 
-    } else { 
-        exit 1, 'Input samplesheet not specified!' 
-    }
+    // Create input channel
+    ch_input = file(params.input)
 
-    // Run the Nextreo sub-workflow
-    metanextviro(Channel.fromPath(params.input))
+    // Run the workflow
+    metanextviro(ch_input)
 }
-
 
 // Helper functions
 def helpMSG() {
