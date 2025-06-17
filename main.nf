@@ -1,3 +1,8 @@
+#!/usr/bin/env nextflow
+
+// Enable DSL 2 syntax
+nextflow.enable.dsl = 2
+
 // Author: Naveen Duhan
 
 
@@ -32,7 +37,7 @@ workflow {
     }
 
     // Run the Nextreo sub-workflow
-    metanextviro(ch_input)
+    metanextviro(Channel.fromPath(params.input))
 }
 
 

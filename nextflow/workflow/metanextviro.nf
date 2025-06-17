@@ -10,7 +10,7 @@ include { CONTIG_ORGANIZATION } from '../subworkflow/organize_contigs.nf'
 include { VISUALIZATION } from '../subworkflow/visualization.nf'
 include { coverage } from '../modules/coverage.nf'
 
-workflow METANEXTVIRO {
+workflow metanextviro {
     take:
         ch_input
 
