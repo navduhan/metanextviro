@@ -36,7 +36,15 @@ workflow metanextviro {
             ASSEMBLY.out.contigs
         )
         
-        VISUALIZATION(VIRAL_ANALYSIS.out.checkv_report, VIRAL_ANALYSIS.out.virfinder_results)
+        // Pass all required inputs to VISUALIZATION
+        VISUALIZATION(
+            TAXONOMIC_PROFILING.out.kraken2_reports,
+            QUALITY.out.multiqc_report,
+            ASSEMBLY.out.coverage_plots,
+            ASSEMBLY.out.heatmap,
+            VIRAL_ANALYSIS.out.checkv_report,
+            VIRAL_ANALYSIS.out.virfinder_results
+        )
 
     emit:
         // Quality control outputs
