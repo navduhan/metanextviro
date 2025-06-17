@@ -4,27 +4,29 @@ include { fastp } from '../modules/fastp.nf'
 include { flexbar } from '../modules/flexbar.nf'
 include { trim_galore } from '../modules/trim_galore.nf'
 
-workflow TRIMMING {
-    take:
-        reads1
-        reads2
+process TRIMMING {
+    input:
+        val reads1
+        val reads2
 
-    main:
-        // Select trimming tool based on params.trimmer
-        trimmed_reads = if (params.trimmer == 'fastp') {
-            fastp(reads1, reads2)
-            fastp.out.clean_reads
+    output:
+        path "*_1.fastq.gz", emit: clean_reads1
+        path "*_2.fastq.gz", emit: clean_reads2
+
+    script:
+        if (params.trimmer == 'fastp') {
+            """
+            fastp -i ${reads1} -I ${reads2} -o trimmed_1.fastq.gz -O trimmed_2.fastq.gz
+            """
         } else if (params.trimmer == 'flexbar') {
-            flexbar(reads1, reads2)
-            flexbar.out.clean_reads
+            """
+            flexbar -r ${reads1} -p ${reads2} -t trimmed
+            """
         } else if (params.trimmer == 'trim_galore') {
-            trim_galore(reads1, reads2)
-            trim_galore.out.clean_reads
+            """
+            trim_galore --paired ${reads1} ${reads2}
+            """
         } else {
             error "Invalid trimmer specified: ${params.trimmer}. Choose from: fastp, flexbar, trim_galore"
         }
-
-    emit:
-        clean_reads1 = trimmed_reads.map { meta, reads -> reads[0] }
-        clean_reads2 = trimmed_reads.map { meta, reads -> reads[1] }
 } 

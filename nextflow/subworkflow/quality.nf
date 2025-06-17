@@ -3,20 +3,18 @@
 include { fastqc } from '../modules/fastqc.nf'
 include { multiqc } from '../modules/multiqc.nf'
 
-workflow QUALITY {
-    take:
-        reads1
-        reads2
+process QUALITY {
+    input:
+        val reads1
+        val reads2
 
-    main:
-        // Run FastQC on raw reads
-        fastqc(reads1)
-        fastqc(reads2)
+    output:
+        path "*.html", emit: reports
+        path "multiqc_report.html", emit: multiqc_report
 
-        // Run MultiQC to aggregate FastQC reports
-        multiqc(fastqc.out.reports)
-
-    emit:
-        reports = fastqc.out.reports
-        multiqc_report = multiqc.out.report
+    script:
+        """
+        fastqc ${reads1} ${reads2}
+        multiqc .
+        """
 } 
