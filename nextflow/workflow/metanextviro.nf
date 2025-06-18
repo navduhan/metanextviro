@@ -34,10 +34,10 @@ workflow metanextviro {
         TAXONOMIC_PROFILING(TRIMMING.out.clean_reads1.join(TRIMMING.out.clean_reads2))
         VIRAL_ANALYSIS(ASSEMBLY.out.contigs)
         
-        // Run coverage analysis
+        // Run coverage analysis - combine channels properly for tuple format
         coverage_input = ASSEMBLY.out.contigs
-            .combine(TRIMMING.out.clean_reads1)
-            .combine(TRIMMING.out.clean_reads2)
+            .join(TRIMMING.out.clean_reads1)
+            .join(TRIMMING.out.clean_reads2)
         coverage(coverage_input)
         
         // Pass BLAST results and contigs separately to CONTIG_ORGANIZATION
