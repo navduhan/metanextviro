@@ -31,7 +31,7 @@ workflow metanextviro {
         ASSEMBLY(TRIMMING.out.clean_reads1, TRIMMING.out.clean_reads2)
         
         BLAST_ANNOTATION(ASSEMBLY.out.contigs)
-        TAXONOMIC_PROFILING(ASSEMBLY.out.contigs)
+        TAXONOMIC_PROFILING(TRIMMING.out.clean_reads1.join(TRIMMING.out.clean_reads2))
         VIRAL_ANALYSIS(ASSEMBLY.out.contigs)
         
         // Run coverage analysis
