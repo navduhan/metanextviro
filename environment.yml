@@ -17,6 +17,8 @@ dependencies:
   - blast
   - diamond
   - kraken2
+  - krona
+  - cd-hit
   - quast
   - bowtie2
   - samtools
