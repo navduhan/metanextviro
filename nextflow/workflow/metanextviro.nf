@@ -52,30 +52,31 @@ workflow metanextviro {
         coverage_plot_input = coverage.out.stats
         coverage_plot(coverage_plot_input)
         
+        // TODO: Fix channel structure issues for final_report
         // Extract file paths from tuple channels for final_report
-        kraken2_files_final = TAXONOMIC_PROFILING.out.kraken2_reports.map { id, path -> path }
-        fastqc_files_final = QUALITY.out.reports.map { id, path -> path }
-        coverage_files_final = coverage.out.stats.map { id, path -> path }
-        checkv_files_final = VIRAL_ANALYSIS.out.checkv_report.map { id, path -> path }
-        virfinder_full_files_final = VIRAL_ANALYSIS.out.virfinder_full.map { id, full, filtered -> full }
-        virfinder_filtered_files_final = VIRAL_ANALYSIS.out.virfinder_filtered.map { id, full, filtered -> filtered }
-        blast_files_final = BLAST_ANNOTATION.out.blastn_results_viruses.map { id, path -> path }
-        assembly_files_final = ASSEMBLY.out.contigs.map { id, path -> path }
-        organized_files_final = CONTIG_ORGANIZATION.out.organized_dirs.map { id, path -> path }
+        // kraken2_files_final = TAXONOMIC_PROFILING.out.kraken2_reports.map { id, path -> path }
+        // fastqc_files_final = QUALITY.out.reports.map { id, path -> path }
+        // coverage_files_final = coverage.out.stats.map { id, path -> path }
+        // checkv_files_final = VIRAL_ANALYSIS.out.checkv_report.map { id, path -> path }
+        // virfinder_full_files_final = VIRAL_ANALYSIS.out.virfinder_full.map { id, full, filtered -> full }
+        // virfinder_filtered_files_final = VIRAL_ANALYSIS.out.virfinder_filtered.map { id, full, filtered -> filtered }
+        // blast_files_final = BLAST_ANNOTATION.out.blastn_results_viruses.map { id, path -> path }
+        // assembly_files_final = ASSEMBLY.out.contigs.map { id, path -> path }
+        // organized_files_final = CONTIG_ORGANIZATION.out.organized_dirs.map { id, path -> path }
         
-        // FINAL STEP: Generate comprehensive HTML report after all processes complete
+        // TODO: FINAL STEP: Generate comprehensive HTML report after all processes complete
         // This ensures the report is generated only after everything is finished
-        final_report(
-            kraken2_files_final,
-            fastqc_files_final,
-            coverage_files_final,
-            checkv_files_final,
-            virfinder_full_files_final,
-            virfinder_filtered_files_final,
-            blast_files_final,
-            assembly_files_final,
-            organized_files_final
-        )
+        // final_report(
+        //     kraken2_files_final,
+        //     fastqc_files_final,
+        //     coverage_files_final,
+        //     checkv_files_final,
+        //     virfinder_full_files_final,
+        //     virfinder_filtered_files_final,
+        //     blast_files_final,
+        //     assembly_files_final,
+        //     organized_files_final
+        // )
 
     emit:
         // Quality control outputs
@@ -111,7 +112,7 @@ workflow metanextviro {
         organized_dirs = CONTIG_ORGANIZATION.out.organized_dirs
         organization_summaries = CONTIG_ORGANIZATION.out.summaries
         
-        // Final comprehensive report (generated after all processes complete)
-        final_html_report = final_report.out.report
+        // TODO: Final comprehensive report (generated after all processes complete)
+        // final_html_report = final_report.out.report
         coverage_plots = coverage_plot.out.plot
 }
