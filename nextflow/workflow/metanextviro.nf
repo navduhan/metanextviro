@@ -52,7 +52,8 @@ workflow metanextviro {
             QUALITY.out.reports,
             coverage.out.stats,
             VIRAL_ANALYSIS.out.checkv_report,
-            VIRAL_ANALYSIS.out.virfinder_results
+            VIRAL_ANALYSIS.out.virfinder_full,
+            VIRAL_ANALYSIS.out.virfinder_filtered
         )
 
     emit:
@@ -78,7 +79,8 @@ workflow metanextviro {
         
         // Viral analysis outputs
         checkv_report = VIRAL_ANALYSIS.out.checkv_report
-        virfinder_results = VIRAL_ANALYSIS.out.virfinder_results
+        virfinder_full = VIRAL_ANALYSIS.out.virfinder_full
+        virfinder_filtered = VIRAL_ANALYSIS.out.virfinder_filtered
         
         // Coverage outputs
         coverage_bam = coverage.out.bam

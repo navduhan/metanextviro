@@ -8,7 +8,8 @@ process html_report {
         path fastqc_reports
         path coverage_stats
         path checkv_results
-        path virfinder_results
+        path virfinder_full
+        path virfinder_filtered
 
     output:
         path "final_report.html", emit: report
@@ -57,10 +58,20 @@ process html_report {
         echo '</ul>' >> final_report.html
     fi
 
-    # VirFinder Results
-    if [ -d "${virfinder_results}" ]; then
-        echo '<h2>VirFinder Results</h2><ul>' >> final_report.html
-        for f in ${virfinder_results}/*; do
+    # VirFinder Full Results
+    if [ -d "${virfinder_full}" ]; then
+        echo '<h2>VirFinder Full Results</h2><ul>' >> final_report.html
+        for f in ${virfinder_full}/*; do
+            filename=\$(basename "\$f")
+            echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
+        done
+        echo '</ul>' >> final_report.html
+    fi
+
+    # VirFinder Filtered Results (High Confidence)
+    if [ -d "${virfinder_filtered}" ]; then
+        echo '<h2>VirFinder High-Confidence Results</h2><ul>' >> final_report.html
+        for f in ${virfinder_filtered}/*; do
             filename=\$(basename "\$f")
             echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
         done

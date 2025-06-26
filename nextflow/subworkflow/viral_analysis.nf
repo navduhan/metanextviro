@@ -12,5 +12,6 @@ workflow VIRAL_ANALYSIS {
 
     emit:
         checkv_report = checkv.out.report
-        virfinder_results = virfinder.out.results
+        virfinder_full = virfinder.out.results.map { id, full, filtered -> full }
+        virfinder_filtered = virfinder.out.results.map { id, full, filtered -> filtered }
 } 

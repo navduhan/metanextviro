@@ -8,7 +8,8 @@ workflow VISUALIZATION {
         fastqc_reports_ch
         coverage_stats_ch
         checkv_results_ch
-        virfinder_results_ch
+        virfinder_full_ch
+        virfinder_filtered_ch
 
     main:
         // Generate HTML report
@@ -17,7 +18,8 @@ workflow VISUALIZATION {
             fastqc_reports_ch,
             coverage_stats_ch,
             checkv_results_ch,
-            virfinder_results_ch
+            virfinder_full_ch,
+            virfinder_filtered_ch
         )
 
     emit:

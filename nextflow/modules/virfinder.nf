@@ -9,10 +9,13 @@ process virfinder {
         tuple val(id), path(contigs)
 
     output:
-        tuple val(id), path("virfinder_${id}.txt"), emit: results
+        tuple val(id), path("virfinder_${id}_full.txt"), path("virfinder_${id}_filtered.txt"), emit: results
 
     script:
     """
-    Rscript -e 'library(VirFinder); vf.run("${contigs}", out.file="virfinder_${id}.txt", nthread=${task.cpus})'
+    Rscript ${projectDir}/nextflow/bin/run_virfinder.R \\
+        ${contigs} \\
+        virfinder_${id}_full.txt \\
+        virfinder_${id}_filtered.txt
     """
 } 
