@@ -5,7 +5,7 @@
 </p>
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/navduhan/metanextviro)](https://github.com/navduhan/metanextviro/releases)
-[![GitHub license](https://img.shields.io/github/license/navduhan/metanextviro)](https://github.com/navduhan/metanextviro/blob/main/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/navduhan/metanextviro)](https://github.com/navduhan/metanextviro/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/navduhan/metanextviro)](https://github.com/navduhan/metanextviro/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/navduhan/metanextviro)](https://github.com/navduhan/metanextviro/network)
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A5%2021.10.3-brightgreen.svg)](https://www.nextflow.io/)
