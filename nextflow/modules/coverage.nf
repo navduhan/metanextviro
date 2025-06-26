@@ -23,7 +23,7 @@ process coverage {
     mv ${id}.sorted.bam ${id}.bam
     samtools index ${id}.bam
 
-    # Generate coverage stats
-    samtools depth ${id}.bam > coverage_${id}.txt
+    # Generate contig-level coverage stats
+    ${projectDir}/nextflow/bin/calculate_contig_coverage.sh ${id}.bam coverage_${id}.txt
     """
 } 

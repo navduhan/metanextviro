@@ -10,6 +10,8 @@ include { VIRAL_ANALYSIS } from '../subworkflow/viral_analysis.nf'
 include { CONTIG_ORGANIZATION } from '../subworkflow/organize_contigs.nf'
 include { VISUALIZATION } from '../subworkflow/visualization.nf'
 include { coverage } from '../modules/coverage.nf'
+include { coverage_plot } from '../modules/coverage_plot.nf'
+include { final_report } from '../modules/final_report.nf'
 
 workflow metanextviro {
     take:
@@ -46,14 +48,22 @@ workflow metanextviro {
             ASSEMBLY.out.contigs
         )
         
-        // Pass available inputs to VISUALIZATION
-        VISUALIZATION(
+        // Generate coverage plots (intermediate visualization)
+        coverage_plot_input = coverage.out.stats
+        coverage_plot(coverage_plot_input)
+        
+        // FINAL STEP: Generate comprehensive HTML report after all processes complete
+        // This ensures the report is generated only after everything is finished
+        final_report(
             TAXONOMIC_PROFILING.out.kraken2_reports,
             QUALITY.out.reports,
             coverage.out.stats,
             VIRAL_ANALYSIS.out.checkv_report,
             VIRAL_ANALYSIS.out.virfinder_full,
-            VIRAL_ANALYSIS.out.virfinder_filtered
+            VIRAL_ANALYSIS.out.virfinder_filtered,
+            BLAST_ANNOTATION.out.blastn_results_viruses,
+            ASSEMBLY.out.contigs,
+            CONTIG_ORGANIZATION.out.organized_dirs
         )
 
     emit:
@@ -90,6 +100,7 @@ workflow metanextviro {
         organized_dirs = CONTIG_ORGANIZATION.out.organized_dirs
         organization_summaries = CONTIG_ORGANIZATION.out.summaries
         
-        // Visualization outputs
-        html_report = VISUALIZATION.out.html
+        // Final comprehensive report (generated after all processes complete)
+        final_html_report = final_report.out.report
+        coverage_plots = coverage_plot.out.plot
 }
