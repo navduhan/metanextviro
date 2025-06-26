@@ -13,11 +13,11 @@ The pipeline integrates state-of-the-art tools for:
 - **Assembly** of metagenomic data (MEGAHIT, metaSPAdes, or hybrid)
 - **Taxonomic classification** with Kraken2 and visualization with Krona
 - **Viral genome completion and quality assessment** (CheckV)
-- **Viral sequence identification** (VirFinder)
+- **Viral sequence identification** (VirFinder with custom filtering)
 - **BLAST-based annotation** for both viral and bacterial contigs
 - **Automated organization of contigs** by taxonomy and family
-- **Coverage analysis and visualization** for assembled contigs
-- **Comprehensive reporting** with MultiQC, coverage plots, heatmaps, and an interactive HTML summary
+- **Contig-level coverage analysis and visualization** for assembled contigs
+- **Comprehensive reporting** with MultiQC, coverage plots, and an interactive HTML summary
 
 MetaNextViro is suitable for:
 - Discovery of known and novel viruses in metagenomic samples
@@ -34,11 +34,30 @@ The pipeline is highly portable and reproducible, supporting Conda, Docker, and 
 - Multiple assembly options (MEGAHIT, metaSPAdes, or hybrid)
 - BLAST-based and Kraken2-based taxonomic annotation
 - Automated organization of contigs by taxonomy and family
-- Viral genome completion (CheckV) and classification (VirFinder)
-- Coverage analysis and visualization
+- Viral genome completion (CheckV) and classification (VirFinder with custom filtering)
+- **Contig-level coverage analysis** and visualization
 - Comparative heatmap visualization
-- Comprehensive HTML report aggregating all results
+- **Comprehensive HTML report** generated after all processes complete
 - Structured, per-sample output organization
+
+## Key Improvements
+
+### Enhanced VirFinder Analysis
+- **Custom R script** (`run_virfinder.R`) for improved control over filtering criteria
+- **Dual output format**: Full results and high-confidence filtered results (score ≥ 0.9, p-value ≤ 0.05)
+- **Better integration** with downstream analysis and reporting
+
+### Improved Coverage Analysis
+- **Contig-level coverage calculation** instead of nucleotide-level depth
+- **Custom bash script** (`calculate_contig_coverage.sh`) for efficient processing
+- **Bar plot visualizations** showing coverage distribution across contigs
+- **No additional dependencies** - uses standard tools (samtools, awk)
+
+### Final Report Generation
+- **Guaranteed completion order**: HTML report generated only after all analysis steps complete
+- **Comprehensive content**: Includes all pipeline outputs in one place
+- **Robust error handling**: Graceful handling of missing files
+- **Enhanced user experience**: Complete report only when everything is done
 
 ## Prerequisites
 
@@ -230,15 +249,15 @@ nextflow run main.nf \
    - Taxonomic annotation of contigs
 6. **Viral Analysis**
    - CheckV genome completion
-   - VirFinder classification
+   - **VirFinder classification with custom filtering** (full and high-confidence results)
 7. **Contig Organization**
    - Organize contigs by taxonomy and family
 8. **Coverage Analysis**
-   - Read mapping and coverage stats
+   - **Contig-level coverage calculation** and statistics
    - Coverage plot generation
-9. **Visualization & Reporting**
-   - Krona, MultiQC, coverage plots, heatmap
-   - Comprehensive HTML report with all results
+9. **Final Report Generation**
+   - **Comprehensive HTML report** generated after all processes complete
+   - Includes all pipeline outputs in one place
 
 ## Output Structure
 
@@ -254,19 +273,41 @@ results/
 ├── krona_results/        # Krona HTML visualizations
 ├── organized_contigs/    # Organized contigs by taxonomy
 ├── checkv/               # CheckV viral genome completion
-├── virfinder/            # VirFinder results
-├── coverage/             # BAM files and coverage stats
+├── virfinder/            # VirFinder results (full and filtered)
+├── coverage/             # BAM files and contig-level coverage stats
 ├── coverage_plots/       # Coverage plots (PNG)
 ├── heatmaps/             # Comparative heatmaps
-├── final_report/         # Comprehensive HTML report
+├── final_report/         # Comprehensive HTML report (final step)
 └── ...                   # Other outputs as configured
 ```
+
+## Key Output Files
+
+### VirFinder Results
+- `virfinder_full_*.txt`: Complete VirFinder results for all contigs
+- `virfinder_filtered_*.txt`: High-confidence viral contigs (score ≥ 0.9, p-value ≤ 0.05)
+
+### Coverage Analysis
+- `coverage_*.txt`: Contig-level coverage statistics with columns:
+  - Contig: Contig identifier
+  - Length: Contig length in bp
+  - Average_Coverage: Mean coverage across the contig
+  - Total_Reads: Number of mapped reads
+
+### Final Report
+- `final_report.html`: Comprehensive HTML report generated after all processes complete
+  - Includes all pipeline outputs
+  - Links to all result files
+  - Generated only when all analyses are finished
 
 ## Configuration
 
 - `nextflow.config`: Main configuration file (edit to set default parameters, resources, and profiles)
 - `environment.yml`: Conda environment for all dependencies
 - `Dockerfile`: (Optional) Build your own container for full reproducibility
+- `nextflow/bin/`: Custom scripts for enhanced functionality
+  - `run_virfinder.R`: Custom VirFinder analysis with filtering
+  - `calculate_contig_coverage.sh`: Contig-level coverage calculation
 
 ## Resource Requirements
 
@@ -284,6 +325,15 @@ results/
 ```bash
 nextflow run main.nf --input samplesheet.csv --outdir results -profile slurm,singularity
 ```
+
+## Recent Updates
+
+### Version 2.0 (Latest)
+- **Enhanced VirFinder Analysis**: Custom R script with dual output format (full and filtered results)
+- **Improved Coverage Analysis**: Contig-level coverage calculation instead of nucleotide-level depth
+- **Final Report Generation**: Guaranteed completion order with comprehensive HTML report
+- **Better Error Handling**: Robust handling of missing files and edge cases
+- **Performance Improvements**: More efficient processing and reduced dependencies
 
 ## Citations
 
