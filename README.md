@@ -4,6 +4,35 @@
   <img src="logo.png" alt="MetaNextViro Logo" width="180"/>
 </p>
 
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/navduhan/metanextviro)](https://github.com/navduhan/metanextviro/releases)
+[![GitHub license](https://img.shields.io/github/license/navduhan/metanextviro)](https://github.com/navduhan/metanextviro/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/navduhan/metanextviro)](https://github.com/navduhan/metanextviro/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/navduhan/metanextviro)](https://github.com/navduhan/metanextviro/network)
+[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A5%2021.10.3-brightgreen.svg)](https://www.nextflow.io/)
+[![Docker](https://img.shields.io/badge/docker-available-blue.svg)](https://www.docker.com/)
+[![Singularity](https://img.shields.io/badge/singularity-available-orange.svg)](https://sylabs.io/singularity/)
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [Features](#features)
+- [Key Improvements](#key-improvements)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Running the Pipeline](#running-the-pipeline)
+- [Pipeline Steps](#pipeline-steps)
+- [Output Structure](#output-structure)
+- [Key Output Files](#key-output-files)
+- [Configuration](#configuration)
+- [Resource Requirements](#resource-requirements)
+- [Docker & Singularity Support](#docker--singularity-support)
+- [Recent Updates](#recent-updates)
+- [Citations](#citations)
+- [Support](#support)
+- [License](#license)
+- [Authors](#authors)
+
 ## Overview
 
 MetaNextViro is a robust, modular Nextflow pipeline designed primarily for **virus identification and characterization** from metagenomic sequencing data. While it also supports bacterial profiling, its main focus is on the detection, classification, and annotation of viral sequences in complex samples such as environmental, clinical, or animal/human microbiome datasets.
@@ -27,6 +56,44 @@ MetaNextViro is suitable for:
 - Integrated viral and bacterial community profiling (optional)
 
 The pipeline is highly portable and reproducible, supporting Conda, Docker, and Singularity environments, and can be run on local workstations, HPC clusters (SLURM), or in the cloud. It is ideal for virome research, outbreak investigations, environmental surveillance, and any project requiring robust viral metagenomics.
+
+## Quick Start
+
+### Prerequisites
+- Nextflow (>=21.10.3)
+- Java (>=8)
+- Conda, Docker, or Singularity
+
+### Basic Usage
+```bash
+# Clone the repository
+git clone https://github.com/navduhan/metanextviro.git
+cd metanextviro
+
+# Run with conda (recommended for first-time users)
+nextflow run main.nf \
+  --input samplesheet.csv \
+  --outdir results \
+  --kraken2_db /path/to/kraken2_db \
+  --checkv_db /path/to/checkv_db \
+  -profile conda
+
+# Run with singularity (recommended for HPC)
+nextflow run main.nf \
+  --input samplesheet.csv \
+  --outdir results \
+  --kraken2_db /path/to/kraken2_db \
+  --checkv_db /path/to/checkv_db \
+  -profile singularity
+```
+
+### Sample Input Format
+Create a `samplesheet.csv` file:
+```csv
+sample,fastq_1,fastq_2
+sample1,/path/to/sample1_R1.fastq.gz,/path/to/sample1_R2.fastq.gz
+sample2,/path/to/sample2_R1.fastq.gz,/path/to/sample2_R2.fastq.gz
+```
 
 ## Features
 
@@ -81,9 +148,11 @@ All dependencies can be installed using the provided `environment.yml` file or a
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/metanextviro.git
+   git clone https://github.com/navduhan/metanextviro.git
    cd metanextviro
    ```
+
+   Or download the latest release from: [https://github.com/navduhan/metanextviro](https://github.com/navduhan/metanextviro)
 
 2. **Create and activate the conda environment (platform-specific):**
 
@@ -338,14 +407,26 @@ nextflow run main.nf --input samplesheet.csv --outdir results -profile slurm,sin
 ## Citations
 
 If you use this pipeline, please cite:
-- [Your paper/preprint]
-- [Tools used in the pipeline]
+
+- **MetaNextViro Pipeline**: [https://github.com/navduhan/metanextviro](https://github.com/navduhan/metanextviro)
+- **Nextflow**: Di Tommaso, P., Chatzou, M., Floden, E. W., Barja, P. P., Palumbo, E., & Notredame, C. (2017). Nextflow enables reproducible computational workflows. Nature Biotechnology, 35(4), 316-319. [https://doi.org/10.1038/nbt.3820](https://doi.org/10.1038/nbt.3820)
+- **FastQC**: Andrews, S. (2010). FastQC: a quality control tool for high throughput sequence data. [https://www.bioinformatics.babraham.ac.uk/projects/fastqc/](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
+- **MEGAHIT**: Li, D., Liu, C. M., Luo, R., Sadakane, K., & Lam, T. W. (2015). MEGAHIT: an ultra-fast single-node solution for large and complex metagenomics assembly via succinct de Bruijn graph. Bioinformatics, 31(10), 1674-1676. [https://doi.org/10.1093/bioinformatics/btv033](https://doi.org/10.1093/bioinformatics/btv033)
+- **SPAdes**: Bankevich, A., Nurk, S., Antipov, D., Gurevich, A. A., Dvorkin, M., Kulikov, A. S., ... & Pevzner, P. A. (2012). SPAdes: a new genome assembly algorithm and its applications to single-cell sequencing. Journal of Computational Biology, 19(5), 455-477. [https://doi.org/10.1089/cmb.2012.0021](https://doi.org/10.1089/cmb.2012.0021)
+- **Kraken2**: Wood, D. E., Lu, J., & Langmead, B. (2019). Improved metagenomic analysis with Kraken 2. Genome Biology, 20(1), 1-13. [https://doi.org/10.1186/s13059-019-1891-0](https://doi.org/10.1186/s13059-019-1891-0)
+- **CheckV**: Nayfach, S., Camargo, A. P., Schulz, F., Eloe-Fadrosh, E., Roux, S., & Kyrpides, N. C. (2021). CheckV assesses the quality and completeness of metagenome-assembled viral genomes. Nature Biotechnology, 39(5), 578-585. [https://doi.org/10.1038/s41587-020-00774-7](https://doi.org/10.1038/s41587-020-00774-7)
+- **VirFinder**: Ren, J., Ahlgren, N. A., Lu, Y. Y., Fuhrman, J. A., & Sun, F. (2017). VirFinder: a novel k-mer based tool for identifying viral sequences from assembled metagenomic data. Microbiome, 5(1), 1-20. [https://doi.org/10.1186/s40168-017-0283-5](https://doi.org/10.1186/s40168-017-0283-5)
+- **BLAST**: Altschul, S. F., Gish, W., Miller, W., Myers, E. W., & Lipman, D. J. (1990). Basic local alignment search tool. Journal of Molecular Biology, 215(3), 403-410. [https://doi.org/10.1016/S0022-2836(05)80360-2](https://doi.org/10.1016/S0022-2836(05)80360-2)
+- **Bowtie2**: Langmead, B., & Salzberg, S. L. (2012). Fast gapped-read alignment with Bowtie 2. Nature Methods, 9(4), 357-359. [https://doi.org/10.1038/nmeth.1923](https://doi.org/10.1038/nmeth.1923)
+- **Samtools**: Li, H., Handsaker, B., Wysoker, A., Fennell, T., Ruan, J., Homer, N., ... & Durbin, R. (2009). The Sequence Alignment/Map format and SAMtools. Bioinformatics, 25(16), 2078-2079. [https://doi.org/10.1093/bioinformatics/btp352](https://doi.org/10.1093/bioinformatics/btp352)
+- **MultiQC**: Ewels, P., Magnusson, M., Lundin, S., & Käller, M. (2016). MultiQC: summarize analysis results for multiple tools and samples in a single report. Bioinformatics, 32(19), 3047-3048. [https://doi.org/10.1093/bioinformatics/btw354](https://doi.org/10.1093/bioinformatics/btw354)
+- **Krona**: Ondov, B. D., Bergman, N. H., & Phillippy, A. M. (2011). Interactive metagenomic visualization in a Web browser. BMC Bioinformatics, 12(1), 1-10. [https://doi.org/10.1186/1471-2105-12-385](https://doi.org/10.1186/1471-2105-12-385)
 
 ## Support
 
 For issues, questions, or suggestions:
 - Create an issue on GitHub
-- Contact: [Your contact information]
+- Contact: naveen.duhan@outlook.com
 
 ## License
 
