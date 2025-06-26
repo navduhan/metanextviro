@@ -13,23 +13,7 @@
 [![Singularity](https://img.shields.io/badge/singularity-available-orange.svg)](https://sylabs.io/singularity/)
 
 <p align="center">
-  <a href="#metagenomics">metagenomics</a> •
-  <a href="#virology">virology</a> •
-  <a href="#bioinformatics">bioinformatics</a> •
-  <a href="#nextflow">nextflow</a> •
-  <a href="#virus-discovery">virus-discovery</a> •
-  <a href="#metagenomic-assembly">metagenomic-assembly</a> •
-  <a href="#taxonomic-classification">taxonomic-classification</a> •
-  <a href="#viral-analysis">viral-analysis</a> •
-  <a href="#coverage-analysis">coverage-analysis</a> •
-  <a href="#checkv">checkv</a> •
-  <a href="#virfinder">virfinder</a> •
-  <a href="#kraken2">kraken2</a> •
-  <a href="#blast">blast</a> •
-  <a href="#docker">docker</a> •
-  <a href="#singularity">singularity</a> •
-  <a href="#hpc">hpc</a> •
-  <a href="#slurm">slurm</a>
+  metagenomics • virology • bioinformatics • nextflow • virus-discovery • metagenomic-assembly • taxonomic-classification • viral-analysis • coverage-analysis • checkv • virfinder • kraken2 • blast • docker • singularity • hpc • slurm
 </p>
 
 ## Table of Contents
