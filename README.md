@@ -417,12 +417,13 @@ nextflow run main.nf --input samplesheet.csv --outdir results -profile slurm,sin
 
 ## Recent Updates
 
-### Version 2.0 (Latest)
+### Version 1.0 (Latest Release)
 - **Enhanced VirFinder Analysis**: Custom R script with dual output format (full and filtered results)
 - **Improved Coverage Analysis**: Contig-level coverage calculation instead of nucleotide-level depth
 - **Final Report Generation**: Guaranteed completion order with comprehensive HTML report
 - **Better Error Handling**: Robust handling of missing files and edge cases
 - **Performance Improvements**: More efficient processing and reduced dependencies
+- **Comprehensive Documentation**: Complete README with citations, badges, and usage examples
 
 ## Citations
 
