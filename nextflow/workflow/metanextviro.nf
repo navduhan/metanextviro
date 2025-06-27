@@ -115,4 +115,5 @@ workflow metanextviro {
         // TODO: Final comprehensive report (generated after all processes complete)
         // final_html_report = final_report.out.report
         coverage_plots = coverage_plot.out.plot
+        coverage_distributions = coverage_plot.out.distribution_plot
 }

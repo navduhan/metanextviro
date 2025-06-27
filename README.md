@@ -329,7 +329,11 @@ nextflow run main.nf \
    - **Unbiased classification using comprehensive nucleotide database**
 8. **Coverage Analysis**
    - **Contig-level coverage calculation** and statistics
-   - Coverage plot generation
+   - **Enhanced coverage plots with intelligent x-axis labeling** (adapts to contig count)
+   - **Statistics box** with summary metrics
+   - **Mean coverage line** for reference
+   - **Sorted by coverage** for better visualization
+   - **Coverage distribution histograms** for datasets with >100 contigs
 9. **Final Report Generation**
    - **Comprehensive HTML report** generated after all processes complete
    - Includes all pipeline outputs in one place
@@ -368,6 +372,12 @@ results/
   - Length: Contig length in bp
   - Average_Coverage: Mean coverage across the contig
   - Total_Reads: Number of mapped reads
+- `coverage_plot_*.png`: Enhanced coverage plots with:
+  - **Intelligent x-axis labeling** (adapts to contig count)
+  - **Statistics box** with summary metrics
+  - **Mean coverage line** for reference
+  - **Sorted by coverage** for better visualization
+- `coverage_distribution_*.png`: Coverage distribution histograms (for >100 contigs)
 
 ### Final Report
 - `final_report.html`: Comprehensive HTML report generated after all processes complete
