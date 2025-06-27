@@ -10,7 +10,7 @@ process coverage_plot {
 
     output:
         tuple val(id), path("coverage_plot_${id}.png"), emit: plot
-        tuple val(id), path("coverage_distribution_${id}.png"), optional true, emit: distribution_plot
+        tuple val(id), path("coverage_distribution_${id}.png"), optional: true, emit: distribution_plot
 
     script:
     """
