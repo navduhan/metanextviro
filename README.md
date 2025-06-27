@@ -104,6 +104,7 @@ sample2,/path/to/sample2_R1.fastq.gz,/path/to/sample2_R2.fastq.gz
 - Quality control and adapter/quality trimming (FastQC, fastp, flexbar, trim_galore)
 - Multiple assembly options (MEGAHIT, metaSPAdes, or hybrid)
 - BLAST-based and Kraken2-based taxonomic annotation
+- **Flexible BLASTX tool choice** (DIAMOND or traditional BLASTX)
 - Automated organization of contigs by taxonomy and family
 - Viral genome completion (CheckV) and classification (VirFinder with custom filtering)
 - **Contig-level coverage analysis** and visualization
@@ -285,6 +286,7 @@ All parameters can be set on the command line or in `nextflow.config`.
 | --blastdb_nt        | Path to BLAST nt database                                         | (optional)      |
 | --blastdb_nr        | Path to BLAST nr database                                         | (optional)      |
 | --diamonddb         | Path to DIAMOND protein database                                  | (optional)      |
+| --blastx_tool       | BLASTX tool: diamond, blastx (DIAMOND is much faster)             | diamond         |
 | --checkv_db         | Path to CheckV database (for viral genome completion)             | (required)      |
 | --min_contig_length | Minimum contig length for assembly                                | 200             |
 | --quality           | Quality threshold for trimming                                    | 30              |
@@ -300,6 +302,17 @@ nextflow run main.nf \
   --assembler hybrid \
   --kraken2_db /path/to/kraken2_db \
   --checkv_db /path/to/checkv_db \
+  --blastx_tool diamond \
+  -profile singularity
+```
+
+### Example with Traditional BLASTX
+```bash
+nextflow run main.nf \
+  --input samplesheet.csv \
+  --outdir results \
+  --blastx_tool blastx \
+  --blastdb_nr /path/to/nr_db \
   -profile singularity
 ```
 
@@ -319,6 +332,7 @@ nextflow run main.nf \
    - QUAST quality assessment
 5. **BLAST Annotation**
    - Taxonomic annotation of contigs against multiple databases (NT, NR, viruses)
+   - **Flexible BLASTX tool choice** (DIAMOND or traditional BLASTX)
    - **Contig organization uses comprehensive NT database results to avoid viral bias**
 6. **Viral Analysis**
    - CheckV genome completion

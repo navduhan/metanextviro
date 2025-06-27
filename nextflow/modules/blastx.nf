@@ -15,27 +15,45 @@ process blastx {
     script:
     """
     # Log the start of the BLASTX process
-    echo " Starting BLASTX search for NR database for sample: $id"
+    echo " Starting ${params.blastx_tool.upper()} search for NR database for sample: $id"
     echo " Input FASTA file: ${fasta_file}"
-    echo " Using BLAST database: ${params.blastdb_nr}"
+    
+    if [ "${params.blastx_tool}" = "diamond" ]; then
+        echo " Using DIAMOND database: ${params.diamonddb}"
+    else
+        echo " Using BLAST database: ${params.blastdb_nr}"
+    fi
 
-    # Run BLASTX search
-    blastx \
-        -query ${fasta_file} \
-        -db ${params.blastdb_nr} \
-        -out ${id}_nr.txt \
-        -num_alignments 5 \
-        -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovs evalue bitscore qlen slen stitle staxids qstrand' \
-        -num_threads ${task.cpus}
+    # Run BLASTX search based on user choice
+    if [ "${params.blastx_tool}" = "diamond" ]; then
+        # Use DIAMOND BLASTX (much faster)
+        diamond blastx \
+            --query ${fasta_file} \
+            --db ${params.diamonddb} \
+            --out ${id}_nr.txt \
+            --max-target-seqs 5 \
+            --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovhsp evalue bitscore qlen slen stitle staxids qstrand \
+            --threads ${task.cpus} \
+            --sensitive
+    else
+        # Use traditional BLASTX
+        blastx \
+            -query ${fasta_file} \
+            -db ${params.blastdb_nr} \
+            -out ${id}_nr.txt \
+            -num_alignments 5 \
+            -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovs evalue bitscore qlen slen stitle staxids qstrand' \
+            -num_threads ${task.cpus}
+    fi
 
     # Verify BLASTX output
     if [ ! -f "${id}_nr.txt" ]; then
-        echo " Error: BLASTX failed to generate output for sample: $id" >&2
+        echo " Error: ${params.blastx_tool.upper()} failed to generate output for sample: $id" >&2
         exit 1
     fi
 
     # Log the processing step
-    echo " Processing BLASTX results for sample: $id"
+    echo " Processing ${params.blastx_tool.upper()} results for sample: $id"
 
     # Create a directory for processed results
     mkdir -p ${id}_processed_results
@@ -49,11 +67,11 @@ process blastx {
 
     # Verify processed output
     if [ ! -f "${id}_best_hits_nr.xls" ]; then
-        echo " Error: Failed to process BLASTX results for sample: $id" >&2
+        echo " Error: Failed to process ${params.blastx_tool.upper()} results for sample: $id" >&2
         exit 1
     fi
 
     # Log successful completion
-    echo " BLASTX search and processing completed successfully for sample: $id"
+    echo " ${params.blastx_tool.upper()} search and processing completed successfully for sample: $id"
     """
 }
