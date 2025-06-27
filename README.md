@@ -42,7 +42,7 @@
 MetaNextViro is a robust, modular Nextflow pipeline designed primarily for **virus identification and characterization** from metagenomic sequencing data. While it also supports bacterial profiling, its main focus is on the detection, classification, and annotation of viral sequences in complex samples such as environmental, clinical, or animal/human microbiome datasets.
 
 The pipeline integrates state-of-the-art tools for:
-- **Quality control and preprocessing** of raw reads (FastQC, fastp, flexbar, trim_galore, MultiQC)
+- **Quality control and preprocessing** of raw reads (FastQC, fastp, flexbar, trim_galore)
 - **Assembly** of metagenomic data (MEGAHIT, metaSPAdes, or hybrid)
 - **Taxonomic classification** with Kraken2 and visualization with Krona
 - **Viral genome completion and quality assessment** (CheckV)
@@ -50,7 +50,7 @@ The pipeline integrates state-of-the-art tools for:
 - **BLAST-based annotation** for both viral and bacterial contigs
 - **Automated organization of contigs** by taxonomy and family
 - **Contig-level coverage analysis and visualization** for assembled contigs
-- **Comprehensive reporting** with MultiQC, coverage plots, and an interactive HTML summary
+- **Comprehensive reporting** with coverage plots and an interactive HTML summary
 
 MetaNextViro is suitable for:
 - Discovery of known and novel viruses in metagenomic samples
@@ -101,7 +101,7 @@ sample2,/path/to/sample2_R1.fastq.gz,/path/to/sample2_R2.fastq.gz
 
 ## Features
 
-- Quality control and adapter/quality trimming (FastQC, fastp, flexbar, trim_galore, MultiQC)
+- Quality control and adapter/quality trimming (FastQC, fastp, flexbar, trim_galore)
 - Multiple assembly options (MEGAHIT, metaSPAdes, or hybrid)
 - BLAST-based and Kraken2-based taxonomic annotation
 - Automated organization of contigs by taxonomy and family
@@ -141,7 +141,7 @@ sample2,/path/to/sample2_R1.fastq.gz,/path/to/sample2_R2.fastq.gz
 ### Required Tools and Packages
 All dependencies can be installed using the provided `environment.yml` file or automatically with the conda profile.
 
-- FastQC, MultiQC, fastp, flexbar, trim-galore
+- FastQC, fastp, flexbar, trim-galore
 - MEGAHIT, SPAdes, BLAST+, DIAMOND, Kraken2, QUAST
 - Bowtie2, Samtools, Bedtools
 - CheckV, VirFinder (R)
@@ -311,7 +311,6 @@ nextflow run main.nf \
    - FastQC on raw reads
    - Adapter/quality trimming (fastp, flexbar, or trim_galore)
    - FastQC on trimmed reads
-   - MultiQC aggregation
 3. **Taxonomic Profiling**
    - Kraken2 classification
    - Krona visualization
@@ -344,7 +343,6 @@ nextflow run main.nf \
 results/
 ├── fastp/                # Trimmed reads and fastp reports
 ├── fastqc/               # Raw and trimmed read QC reports
-├── multiqc/              # MultiQC summary report
 ├── assembly/             # Assembly results
 │   └── quast/            # Assembly quality reports
 ├── blast_results/        # BLAST annotation results
@@ -436,7 +434,6 @@ If you use this pipeline, please cite:
 - **BLAST**: Altschul, S. F., Gish, W., Miller, W., Myers, E. W., & Lipman, D. J. (1990). Basic local alignment search tool. Journal of Molecular Biology, 215(3), 403-410. [https://doi.org/10.1016/S0022-2836(05)80360-2](https://doi.org/10.1016/S0022-2836(05)80360-2)
 - **Bowtie2**: Langmead, B., & Salzberg, S. L. (2012). Fast gapped-read alignment with Bowtie 2. Nature Methods, 9(4), 357-359. [https://doi.org/10.1038/nmeth.1923](https://doi.org/10.1038/nmeth.1923)
 - **Samtools**: Li, H., Handsaker, B., Wysoker, A., Fennell, T., Ruan, J., Homer, N., ... & Durbin, R. (2009). The Sequence Alignment/Map format and SAMtools. Bioinformatics, 25(16), 2078-2079. [https://doi.org/10.1093/bioinformatics/btp352](https://doi.org/10.1093/bioinformatics/btp352)
-- **MultiQC**: Ewels, P., Magnusson, M., Lundin, S., & Käller, M. (2016). MultiQC: summarize analysis results for multiple tools and samples in a single report. Bioinformatics, 32(19), 3047-3048. [https://doi.org/10.1093/bioinformatics/btw354](https://doi.org/10.1093/bioinformatics/btw354)
 - **Krona**: Ondov, B. D., Bergman, N. H., & Phillippy, A. M. (2011). Interactive metagenomic visualization in a Web browser. BMC Bioinformatics, 12(1), 1-10. [https://doi.org/10.1186/1471-2105-12-385](https://doi.org/10.1186/1471-2105-12-385)
 
 ## Support
