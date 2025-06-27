@@ -319,12 +319,14 @@ nextflow run main.nf \
    - MEGAHIT, metaSPAdes, or hybrid assembly
    - QUAST quality assessment
 5. **BLAST Annotation**
-   - Taxonomic annotation of contigs
+   - Taxonomic annotation of contigs against multiple databases (NT, NR, viruses)
+   - **Contig organization uses comprehensive NT database results to avoid viral bias**
 6. **Viral Analysis**
    - CheckV genome completion
    - **VirFinder classification with custom filtering** (full and high-confidence results)
 7. **Contig Organization**
-   - Organize contigs by taxonomy and family
+   - Organize contigs by taxonomy and family using NT database results
+   - **Unbiased classification using comprehensive nucleotide database**
 8. **Coverage Analysis**
    - **Contig-level coverage calculation** and statistics
    - Coverage plot generation

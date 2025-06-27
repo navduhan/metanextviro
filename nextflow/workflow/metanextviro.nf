@@ -44,7 +44,7 @@ workflow metanextviro {
         
         // Pass BLAST results and contigs separately to CONTIG_ORGANIZATION
         CONTIG_ORGANIZATION(
-            BLAST_ANNOTATION.out.blastn_results_viruses,
+            BLAST_ANNOTATION.out.blastn_results_nt,
             ASSEMBLY.out.contigs
         )
         
@@ -60,7 +60,7 @@ workflow metanextviro {
         // checkv_files_final = VIRAL_ANALYSIS.out.checkv_report.map { id, path -> path }
         // virfinder_full_files_final = VIRAL_ANALYSIS.out.virfinder_full.map { id, full, filtered -> full }
         // virfinder_filtered_files_final = VIRAL_ANALYSIS.out.virfinder_filtered.map { id, full, filtered -> filtered }
-        // blast_files_final = BLAST_ANNOTATION.out.blastn_results_viruses.map { id, path -> path }
+        // blast_files_final = BLAST_ANNOTATION.out.blastn_results_nt.map { id, path -> path }
         // assembly_files_final = ASSEMBLY.out.contigs.map { id, path -> path }
         // organized_files_final = CONTIG_ORGANIZATION.out.organized_dirs.map { id, path -> path }
         
