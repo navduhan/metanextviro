@@ -15,7 +15,7 @@ process blastx {
     script:
     """
     # Log the start of the BLASTX process
-    echo " Starting ${params.blastx_tool.upper()} search for NR database for sample: $id"
+    echo " Starting \$(echo ${params.blastx_tool} | tr '[:lower:]' '[:upper:]') search for NR database for sample: $id"
     echo " Input FASTA file: ${fasta_file}"
     
     if [ "${params.blastx_tool}" = "diamond" ]; then
@@ -48,12 +48,12 @@ process blastx {
 
     # Verify BLASTX output
     if [ ! -f "${id}_nr.txt" ]; then
-        echo " Error: ${params.blastx_tool.upper()} failed to generate output for sample: $id" >&2
+        echo " Error: \$(echo ${params.blastx_tool} | tr '[:lower:]' '[:upper:]') failed to generate output for sample: $id" >&2
         exit 1
     fi
 
     # Log the processing step
-    echo " Processing ${params.blastx_tool.upper()} results for sample: $id"
+    echo " Processing \$(echo ${params.blastx_tool} | tr '[:lower:]' '[:upper:]') results for sample: $id"
 
     # Create a directory for processed results
     mkdir -p ${id}_processed_results
@@ -67,11 +67,11 @@ process blastx {
 
     # Verify processed output
     if [ ! -f "${id}_best_hits_nr.xls" ]; then
-        echo " Error: Failed to process ${params.blastx_tool.upper()} results for sample: $id" >&2
+        echo " Error: Failed to process \$(echo ${params.blastx_tool} | tr '[:lower:]' '[:upper:]') results for sample: $id" >&2
         exit 1
     fi
 
     # Log successful completion
-    echo " ${params.blastx_tool.upper()} search and processing completed successfully for sample: $id"
+    echo " \$(echo ${params.blastx_tool} | tr '[:lower:]' '[:upper:]') search and processing completed successfully for sample: $id"
     """
 }
