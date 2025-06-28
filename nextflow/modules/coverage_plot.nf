@@ -109,7 +109,9 @@ else:
                  f'{height:.1f}', ha='center', va='bottom', fontsize=8)
 
 # Add statistics text box
-stats_text = f'Total Contigs: {n_contigs}\\nMean Coverage: {mean_coverage:.1f}\\nMax Coverage: {df[\"Average_Coverage\"].max():.1f}\\nMin Coverage: {df[\"Average_Coverage\"].min():.1f}'
+max_coverage = df['Average_Coverage'].max()
+min_coverage = df['Average_Coverage'].min()
+stats_text = f'Total Contigs: {n_contigs}\\nMean Coverage: {mean_coverage:.1f}\\nMax Coverage: {max_coverage:.1f}\\nMin Coverage: {min_coverage:.1f}'
 plt.text(0.02, 0.98, stats_text, transform=plt.gca().transAxes, 
          verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8),
          fontsize=10)
