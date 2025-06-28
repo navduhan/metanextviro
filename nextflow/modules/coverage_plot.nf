@@ -19,9 +19,41 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+import sys
 
 # Read coverage data
-df = pd.read_csv('${coverage_stats}', sep='\t')
+try:
+    df = pd.read_csv('${coverage_stats}', sep='\t')
+    print(f'Columns in coverage file: {list(df.columns)}')
+    print(f'First few rows:')
+    print(df.head())
+    
+    # Check if required columns exist
+    required_columns = ['Contig', 'Average_Coverage']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    
+    if missing_columns:
+        print(f'Error: Missing required columns: {missing_columns}')
+        print(f'Available columns: {list(df.columns)}')
+        sys.exit(1)
+    
+    # Check for empty dataframe
+    if df.empty:
+        print('Error: Coverage file is empty')
+        sys.exit(1)
+    
+    # Check for NaN values in Average_Coverage
+    if df['Average_Coverage'].isna().any():
+        print('Warning: Found NaN values in Average_Coverage, removing them')
+        df = df.dropna(subset=['Average_Coverage'])
+    
+    if df.empty:
+        print('Error: No valid coverage data after removing NaN values')
+        sys.exit(1)
+    
+except Exception as e:
+    print(f'Error reading coverage file: {e}')
+    sys.exit(1)
 
 # Sort by coverage for better visualization
 df = df.sort_values('Average_Coverage', ascending=False)
@@ -37,7 +69,7 @@ plt.figure(figsize=(fig_width, fig_height))
 bars = plt.bar(range(len(df)), df['Average_Coverage'], alpha=0.7, color='steelblue')
 
 # Set title and labels
-plt.title(f'Contig Coverage for {id} (n={n_contigs} contigs)', fontsize=14, fontweight='bold')
+plt.title(f'Contig Coverage for ${id} (n={n_contigs} contigs)', fontsize=14, fontweight='bold')
 plt.xlabel('Contigs (sorted by coverage)', fontsize=12)
 plt.ylabel('Average Coverage', fontsize=12)
 
@@ -77,7 +109,7 @@ else:
                  f'{height:.1f}', ha='center', va='bottom', fontsize=8)
 
 # Add statistics text box
-stats_text = f'Total Contigs: {n_contigs}\\nMean Coverage: {mean_coverage:.1f}\\nMax Coverage: {df["Average_Coverage"].max():.1f}\\nMin Coverage: {df["Average_Coverage"].min():.1f}'
+stats_text = f'Total Contigs: {n_contigs}\\nMean Coverage: {mean_coverage:.1f}\\nMax Coverage: {df[\"Average_Coverage\"].max():.1f}\\nMin Coverage: {df[\"Average_Coverage\"].min():.1f}'
 plt.text(0.02, 0.98, stats_text, transform=plt.gca().transAxes, 
          verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8),
          fontsize=10)
@@ -92,7 +124,7 @@ if n_contigs > 100:
     
     # Create histogram of coverage distribution
     plt.hist(df['Average_Coverage'], bins=min(30, n_contigs//5), alpha=0.7, color='lightcoral', edgecolor='black')
-    plt.title(f'Coverage Distribution for {id} (n={n_contigs} contigs)', fontsize=14, fontweight='bold')
+    plt.title(f'Coverage Distribution for ${id} (n={n_contigs} contigs)', fontsize=14, fontweight='bold')
     plt.xlabel('Average Coverage', fontsize=12)
     plt.ylabel('Number of Contigs', fontsize=12)
     plt.grid(axis='y', alpha=0.3)
@@ -104,6 +136,8 @@ if n_contigs > 100:
     plt.tight_layout()
     plt.savefig('coverage_distribution_${id}.png', dpi=300, bbox_inches='tight')
     plt.close()
+
+print(f'Successfully created coverage plot for {n_contigs} contigs')
 "
     """
 } 
