@@ -349,7 +349,12 @@ nextflow run main.nf \
    - **Coverage distribution histograms** for datasets with >100 contigs
 9. **Final Report Generation**
    - **Comprehensive HTML report** generated after all processes complete
-   - Includes all pipeline outputs in one place
+   - **Modern, responsive design** with professional styling
+   - **Organized sections** for each pipeline component
+   - **Direct links** to all result files and directories
+   - **Coverage statistics preview** with full file access
+   - **Emojis and visual elements** for better user experience
+   - **Generated only when all analyses are finished**
 
 ## Output Structure
 
@@ -393,9 +398,12 @@ results/
 
 ### Final Report
 - `final_report.html`: Comprehensive HTML report generated after all processes complete
-  - Includes all pipeline outputs
-  - Links to all result files
-  - Generated only when all analyses are finished
+  - **Modern, responsive design** with professional styling
+  - **Organized sections** for each pipeline component
+  - **Direct links** to all result files and directories
+  - **Coverage statistics preview** with full file access
+  - **Emojis and visual elements** for better user experience
+  - **Generated only when all analyses are finished**
 
 ## Configuration
 
