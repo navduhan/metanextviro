@@ -69,30 +69,38 @@ def organize_contigs(blast_results, fasta_file, output_dir, sample_id):
     # Read BLAST results
     df = pd.read_csv(blast_results, sep='\t')
     
+    # Normalize column names (strip whitespace, lower-case for matching)
+    df.columns = [col.strip() for col in df.columns]
+    
     # Create a dictionary to store contig classifications with full taxonomy
     contig_info = {}
     for _, row in df.iterrows():
         contig_id = row['query_id']
-        superkingdom = str(row.get('superkingdom', '')).lower()
-        phylum = str(row.get('phylum', '')).replace(' ', '_')
-        class_taxon = str(row.get('class', '')).replace(' ', '_')
-        order = str(row.get('order', '')).replace(' ', '_')
-        family = str(row.get('family', '')).replace(' ', '_')
-        genus = str(row.get('genus', '')).replace(' ', '_')
-        species = str(row.get('species', '')).replace(' ', '_')
-        subject_title = str(row.get('subject_title', '')).replace(' ', '_')
+        # Use .get() with default empty string, then lower for superkingdom
+        superkingdom = str(row.get('superkingdom', '')).strip().lower()
+        phylum = str(row.get('phylum', '')).strip().replace(' ', '_')
+        class_taxon = str(row.get('class', '')).strip().replace(' ', '_')
+        order = str(row.get('order', '')).strip().replace(' ', '_')
+        family = str(row.get('family', '')).strip().replace(' ', '_')
+        genus = str(row.get('genus', '')).strip().replace(' ', '_')
+        species = str(row.get('species', '')).strip().replace(' ', '_')
+        subject_title = str(row.get('subject_title', '')).strip().replace(' ', '_')
+        
+        # Handle missing or NaN values
+        def safe_val(val, fallback='Unknown'):
+            return fallback if val in ['', 'nan', 'None', 'NA', 'N/A'] else val
         
         if superkingdom in ['viruses', 'bacteria']:
             contig_info[contig_id] = {
                 'type': superkingdom,
-                'superkingdom': superkingdom,
-                'phylum': phylum if phylum != 'nan' else 'Unknown',
-                'class': class_taxon if class_taxon != 'nan' else 'Unknown',
-                'order': order if order != 'nan' else 'Unknown',
-                'family': family if family != 'nan' else 'unclassified',
-                'genus': genus if genus != 'nan' else 'Unknown',
-                'species': species if species != 'nan' else 'Unknown',
-                'subject_title': subject_title if subject_title != 'nan' else 'Unknown'
+                'superkingdom': safe_val(superkingdom, 'Unknown'),
+                'phylum': safe_val(phylum),
+                'class': safe_val(class_taxon),
+                'order': safe_val(order),
+                'family': safe_val(family, 'unclassified'),
+                'genus': safe_val(genus),
+                'species': safe_val(species),
+                'subject_title': safe_val(subject_title)
             }
     
     # Process FASTA file and organize contigs
