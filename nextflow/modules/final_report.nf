@@ -46,7 +46,7 @@ process final_report {
     echo '<h1>🧬 MetaNextViro Analysis Report</h1>' >> final_report.html
     echo '<div class="summary">' >> final_report.html
     echo '    <p><strong>✅ Report generated after all pipeline steps completed successfully.</strong></p>' >> final_report.html
-    echo '    <p class="timestamp">Generated on: $(date)</p>' >> final_report.html
+    echo '    <p class="timestamp">Generated on: \$(date)</p>' >> final_report.html
     echo '</div>' >> final_report.html
 
     # FastQC Reports
