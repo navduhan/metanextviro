@@ -11,14 +11,11 @@ process kraken2 {
         tuple val(id), path(reads1), path(reads2)  // Input: Sample ID and reads (paired-end or single-end)
 
     output:
-        tuple val(id), path("kraken2_results/${id}_kraken2_report.txt"), emit: report
-        tuple val(id), path("kraken2_results/${id}_kraken2_output.txt"), emit: classified_reads
+        tuple val(id), path("${id}_kraken2_report.txt"), emit: report
+        tuple val(id), path("${id}_kraken2_output.txt"), emit: classified_reads
 
     script:
     """
-    # Create output directory for Kraken2 results
-    mkdir -p kraken2_results
-
     # Log the start of the process
     echo " Starting Kraken2 analysis for sample: $id"
     echo "Input files:"
@@ -32,8 +29,8 @@ process kraken2 {
             --db ${params.kraken2_db} \\
             --paired \\
             --threads ${task.cpus} \\
-            --output kraken2_results/${id}_kraken2_output.txt \\
-            --report kraken2_results/${id}_kraken2_report.txt \\
+            --output ${id}_kraken2_output.txt \\
+            --report ${id}_kraken2_report.txt \\
             --memory-mapping \\
             ${reads1} ${reads2}
     else
@@ -41,13 +38,13 @@ process kraken2 {
         kraken2 \\
             --db ${params.kraken2_db} \\
             --threads ${task.cpus} \\
-            --output kraken2_results/${id}_kraken2_output.txt \\
-            --report kraken2_results/${id}_kraken2_report.txt \\
+            --output ${id}_kraken2_output.txt \\
+            --report ${id}_kraken2_report.txt \\
             ${reads1}
     fi
 
     # Verify output files
-    if [ ! -f "kraken2_results/${id}_kraken2_report.txt" ] || [ ! -f "kraken2_results/${id}_kraken2_output.txt" ]; then
+    if [ ! -f "${id}_kraken2_report.txt" ] || [ ! -f "${id}_kraken2_output.txt" ]; then
         echo " Error: Kraken2 failed to generate results for sample: $id" >&2
         exit 1
     fi

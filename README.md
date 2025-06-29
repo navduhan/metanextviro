@@ -363,7 +363,7 @@ results/
 ├── fastp/                # Trimmed reads and fastp reports
 ├── fastqc/               # Raw and trimmed read QC reports
 ├── assembly/             # Assembly results
-│   └── quast/            # Assembly quality reports
+├── assembly_stats/       # Assembly quality assessment (QUAST)
 ├── blast_results/        # BLAST annotation results
 ├── kraken2_results/      # Kraken2 classification results
 ├── krona_results/        # Krona HTML visualizations

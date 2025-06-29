@@ -4,7 +4,7 @@ process quast {
     tag "$meta.id"
     label 'process_medium'
 
-    publishDir "${params.outdir}/assembly/quast", mode: 'copy'
+    publishDir "${params.outdir}/assembly_stats", mode: 'copy'
 
     input:
         tuple val(meta), path(contigs)
