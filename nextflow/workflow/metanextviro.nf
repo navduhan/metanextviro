@@ -55,15 +55,15 @@ workflow metanextviro {
         // FINAL STEP: Generate comprehensive HTML report after all processes complete
         // This ensures the report is generated only after everything is finished
         final_report(
-            TAXONOMIC_PROFILING.out.kraken2_reports.collect(),
-            QUALITY.out.reports.collect(),
-            coverage.out.stats.collect(),
-            VIRAL_ANALYSIS.out.checkv_report.collect(),
-            VIRAL_ANALYSIS.out.virfinder_full.collect(),
-            VIRAL_ANALYSIS.out.virfinder_filtered.collect(),
-            BLAST_ANNOTATION.out.blastn_results_nt.collect(),
-            ASSEMBLY.out.contigs.collect(),
-            CONTIG_ORGANIZATION.out.organized_dirs.collect()
+            TAXONOMIC_PROFILING.out.kraken2_reports.map { it instanceof Tuple ? it[1] : it }.collect(),
+            QUALITY.out.reports.map { it instanceof Tuple ? it[1] : it }.collect(),
+            coverage.out.stats.map { it instanceof Tuple ? it[1] : it }.collect(),
+            VIRAL_ANALYSIS.out.checkv_report.map { it instanceof Tuple ? it[1] : it }.collect(),
+            VIRAL_ANALYSIS.out.virfinder_full.map { it instanceof Tuple ? it[1] : it }.collect(),
+            VIRAL_ANALYSIS.out.virfinder_filtered.map { it instanceof Tuple ? it[1] : it }.collect(),
+            BLAST_ANNOTATION.out.blastn_results_nt.map { it instanceof Tuple ? it[1] : it }.collect(),
+            ASSEMBLY.out.contigs.map { it instanceof Tuple ? it[1] : it }.collect(),
+            CONTIG_ORGANIZATION.out.organized_dirs.map { it instanceof Tuple ? it[1] : it }.collect()
         )
 
     emit:
