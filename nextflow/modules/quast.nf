@@ -10,7 +10,7 @@ process quast {
         tuple val(meta), path(contigs)
 
     output:
-        tuple val(meta), path("${meta.id}_quast"), emit: report
+        tuple val(meta), path("assembly_stats/${meta.id}_quast"), emit: report
         path "versions.yml", emit: versions
 
     when:
@@ -21,29 +21,29 @@ process quast {
         def prefix = task.ext.prefix ?: "${meta.id}"
         """
         # Create output directory
-        mkdir -p ${meta.id}_quast
+        mkdir -p assembly_stats/${meta.id}_quast
 
         # Run QUAST
-        quast.py \\
-            --output-dir ${meta.id}_quast \\
-            --threads ${task.cpus} \\
-            $args \\
+        quast.py \
+            --output-dir assembly_stats/${meta.id}_quast \
+            --threads ${task.cpus} \
+            $args \
             $contigs
 
         # Create versions file
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            quast: \$(quast.py --version | sed 's/QUAST v//;s/ .*\$//')
+            quast: \$(quast.py --version | sed 's/QUAST v//;s/ .*$//')
         END_VERSIONS
         """
 
     stub:
         def prefix = task.ext.prefix ?: "${meta.id}"
         """
-        mkdir -p ${meta.id}_quast
-        touch ${meta.id}_quast/report.txt
-        touch ${meta.id}_quast/report.tsv
-        touch ${meta.id}_quast/report.html
+        mkdir -p assembly_stats/${meta.id}_quast
+        touch assembly_stats/${meta.id}_quast/report.txt
+        touch assembly_stats/${meta.id}_quast/report.tsv
+        touch assembly_stats/${meta.id}_quast/report.html
         touch versions.yml
         """
 } 

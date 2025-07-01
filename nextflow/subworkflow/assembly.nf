@@ -67,4 +67,13 @@ workflow ASSEMBLY {
             params.assembler == "hybrid"    ? hybrid.out.contigs :
             null  // Should not be reached due to earlier validation
         assembly_stats = stats
+        megahit_logs = params.assembler == "megahit" || params.assembler == "hybrid" ? megahit.out.log : null
+        megahit_params = params.assembler == "megahit" || params.assembler == "hybrid" ? megahit.out.params : null
+        megahit_raw_contigs = params.assembler == "megahit" || params.assembler == "hybrid" ? megahit.out.raw_contigs : null
+        metaspades_logs = params.assembler == "metaspades" || params.assembler == "hybrid" ? metaspades.out.log : null
+        metaspades_params = params.assembler == "metaspades" || params.assembler == "hybrid" ? metaspades.out.params : null
+        metaspades_raw_scaffolds = params.assembler == "metaspades" || params.assembler == "hybrid" ? metaspades.out.raw_scaffolds : null
+        hybrid_merged = params.assembler == "hybrid" ? hybrid.out.merged : null
+        hybrid_cdhit = params.assembler == "hybrid" ? hybrid.out.cdhit : null
+        hybrid_cdhit_clstr = params.assembler == "hybrid" ? hybrid.out.cdhit_clstr : null
 }

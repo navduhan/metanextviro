@@ -11,7 +11,10 @@ process metaspades {
         tuple val(id), path(reads1), path(reads2)  // Input: Sample ID and reads (paired or single)
 
     output:
-        tuple val(id), path("metaspades_assembly/${id}/${id}_metanextviro_metaspades_contigs.fa"), emit: contigs  // Emit renamed contigs
+        tuple val(id), path("metaspades_assembly/${id}/${id}_metanextviro_metaspades_contigs.fa"), emit: contigs
+        tuple val(id), path("metaspades_assembly/${id}/spades.log"), emit: log
+        tuple val(id), path("metaspades_assembly/${id}/params.txt"), emit: params
+        tuple val(id), path("metaspades_assembly/${id}/scaffolds.fasta"), emit: raw_scaffolds
 
     script:
     """

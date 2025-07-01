@@ -9,7 +9,10 @@ process hybrid {
         tuple val(id), path(megahit_contigs), path(metaspades_contigs)  // Input: Sample ID and contig files from MEGAHIT and metaSPAdes
 
     output:
-        tuple val(id), path("hybrid_assembly/${id}/${id}_metanextviro_hybrid_contigs.fa"), emit: contigs  // Emit renamed contigs
+        tuple val(id), path("hybrid_assembly/${id}/${id}_metanextviro_hybrid_contigs.fa"), emit: contigs
+        tuple val(id), path("hybrid_assembly/${id}/${id}_merged.fasta"), emit: merged
+        tuple val(id), path("hybrid_assembly/${id}/${id}_merged_cdhit.fasta"), emit: cdhit
+        tuple val(id), path("hybrid_assembly/${id}/${id}_merged_cdhit.fasta.clstr"), emit: cdhit_clstr
 
     script:
     """

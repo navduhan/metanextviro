@@ -63,6 +63,15 @@ workflow metanextviro {
             VIRAL_ANALYSIS.out.virfinder_filtered.map { it instanceof Tuple ? it[1] : it }.collect(),
             BLAST_ANNOTATION.out.blastn_results_nt.map { it instanceof Tuple ? it[1] : it }.collect(),
             ASSEMBLY.out.contigs.map { it instanceof Tuple ? it[1] : it }.collect(),
+            ASSEMBLY.out.megahit_logs?.map { it instanceof Tuple ? it[1] : it }?.collect(),
+            ASSEMBLY.out.megahit_params?.map { it instanceof Tuple ? it[1] : it }?.collect(),
+            ASSEMBLY.out.megahit_raw_contigs?.map { it instanceof Tuple ? it[1] : it }?.collect(),
+            ASSEMBLY.out.metaspades_logs?.map { it instanceof Tuple ? it[1] : it }?.collect(),
+            ASSEMBLY.out.metaspades_params?.map { it instanceof Tuple ? it[1] : it }?.collect(),
+            ASSEMBLY.out.metaspades_raw_scaffolds?.map { it instanceof Tuple ? it[1] : it }?.collect(),
+            ASSEMBLY.out.hybrid_merged?.map { it instanceof Tuple ? it[1] : it }?.collect(),
+            ASSEMBLY.out.hybrid_cdhit?.map { it instanceof Tuple ? it[1] : it }?.collect(),
+            ASSEMBLY.out.hybrid_cdhit_clstr?.map { it instanceof Tuple ? it[1] : it }?.collect(),
             CONTIG_ORGANIZATION.out.organized_dirs.map { it instanceof Tuple ? it[1] : it }.collect()
         )
 

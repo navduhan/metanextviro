@@ -12,6 +12,15 @@ process final_report {
         path virfinder_filtered
         path blast_results
         path assembly_results
+        path megahit_logs
+        path megahit_params
+        path megahit_raw_contigs
+        path metaspades_logs
+        path metaspades_params
+        path metaspades_raw_scaffolds
+        path hybrid_merged
+        path hybrid_cdhit
+        path hybrid_cdhit_clstr
         path organized_dirs
 
     output:
@@ -183,6 +192,67 @@ process final_report {
     else
         echo '<p>No assembly results available.</p>' >> final_report.html
     fi
+    echo '</div>' >> final_report.html
+
+    # Assembly Logs and Stats
+    echo '<div class="section">' >> final_report.html
+    echo '<h2>📝 Assembly Logs & Stats</h2>' >> final_report.html
+    echo '<ul class="file-list">' >> final_report.html
+    for f in ${megahit_logs}/*; do
+        if [ -f "$f" ]; then
+            filename=$(basename "$f")
+            echo "<li><a href='../megahit_assembly/">${filename}</a> (MEGAHIT log)</li>" >> final_report.html
+        fi
+    done
+    for f in ${megahit_params}/*; do
+        if [ -f "$f" ]; then
+            filename=$(basename "$f")
+            echo "<li><a href='../megahit_assembly/">${filename}</a> (MEGAHIT params)</li>" >> final_report.html
+        fi
+    done
+    for f in ${megahit_raw_contigs}/*; do
+        if [ -f "$f" ]; then
+            filename=$(basename "$f")
+            echo "<li><a href='../megahit_assembly/">${filename}</a> (MEGAHIT raw contigs)</li>" >> final_report.html
+        fi
+    done
+    for f in ${metaspades_logs}/*; do
+        if [ -f "$f" ]; then
+            filename=$(basename "$f")
+            echo "<li><a href='../metaspades_assembly/">${filename}</a> (MetaSPAdes log)</li>" >> final_report.html
+        fi
+    done
+    for f in ${metaspades_params}/*; do
+        if [ -f "$f" ]; then
+            filename=$(basename "$f")
+            echo "<li><a href='../metaspades_assembly/">${filename}</a> (MetaSPAdes params)</li>" >> final_report.html
+        fi
+    done
+    for f in ${metaspades_raw_scaffolds}/*; do
+        if [ -f "$f" ]; then
+            filename=$(basename "$f")
+            echo "<li><a href='../metaspades_assembly/">${filename}</a> (MetaSPAdes raw scaffolds)</li>" >> final_report.html
+        fi
+    done
+    for f in ${hybrid_merged}/*; do
+        if [ -f "$f" ]; then
+            filename=$(basename "$f")
+            echo "<li><a href='../hybrid_assembly/">${filename}</a> (Hybrid merged contigs)</li>" >> final_report.html
+        fi
+    done
+    for f in ${hybrid_cdhit}/*; do
+        if [ -f "$f" ]; then
+            filename=$(basename "$f")
+            echo "<li><a href='../hybrid_assembly/">${filename}</a> (Hybrid CD-HIT contigs)</li>" >> final_report.html
+        fi
+    done
+    for f in ${hybrid_cdhit_clstr}/*; do
+        if [ -f "$f" ]; then
+            filename=$(basename "$f")
+            echo "<li><a href='../hybrid_assembly/">${filename}</a> (Hybrid CD-HIT cluster)</li>" >> final_report.html
+        fi
+    done
+    echo '</ul>' >> final_report.html
     echo '</div>' >> final_report.html
 
     # Organized Contigs

@@ -11,7 +11,10 @@ process megahit {
         tuple val(id), path(reads1), path(reads2)  // Input: Sample ID and reads (paired or single)
 
     output:
-        tuple val(id), path("megahit_assembly/${id}/${id}_metanextviro_megahit_contigs.fa"), emit: contigs  // Emit renamed contigs
+        tuple val(id), path("megahit_assembly/${id}/${id}_metanextviro_megahit_contigs.fa"), emit: contigs
+        tuple val(id), path("megahit_assembly/${id}/log"), emit: log
+        tuple val(id), path("megahit_assembly/${id}/params.json"), emit: params
+        tuple val(id), path("megahit_assembly/${id}/${id}.contigs.fa"), emit: raw_contigs
 
     script:
     """
