@@ -19,7 +19,7 @@ process megahit {
     script:
     """
     # Create output directory for assembly
-    mkdir -p megahit_assembly
+    mkdir -p megahit_assembly/${id}
 
     # Log the start of the process
     echo " Starting MEGAHIT assembly for sample: $id"
@@ -54,6 +54,36 @@ process megahit {
         echo " Error: MEGAHIT failed to generate contigs for sample: $id" >&2
         exit 1
     fi
+
+    # Create log file by combining MEGAHIT log files
+    echo "Creating log file for sample: $id"
+    if [ -f "megahit_assembly/${id}/${id}.log" ]; then
+        cp megahit_assembly/${id}/${id}.log megahit_assembly/${id}/log
+    else
+        echo "MEGAHIT assembly log for sample: $id" > megahit_assembly/${id}/log
+        echo "Generated on: \$(date)" >> megahit_assembly/${id}/log
+        echo "Sample ID: $id" >> megahit_assembly/${id}/log
+        echo "Input files: ${reads1} ${reads2}" >> megahit_assembly/${id}/log
+    fi
+
+    # Create params.json file
+    echo "Creating params.json file for sample: $id"
+    cat > megahit_assembly/${id}/params.json << EOF
+    {
+        "sample_id": "$id",
+        "assembler": "megahit",
+        "min_contig_length": "${params.min_contig_length}",
+        "threads": "${task.cpus}",
+        "input_files": {
+            "reads1": "${reads1}",
+            "reads2": "${reads2}"
+        },
+        "parameters": {
+            "no_mercy": true,
+            "out_prefix": "$id"
+        }
+    }
+    EOF
 
     # Log the renaming step
     echo " Renaming contig headers for sample: $id"

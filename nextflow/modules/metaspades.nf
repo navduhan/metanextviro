@@ -19,7 +19,7 @@ process metaspades {
     script:
     """
     # Create output directory for metaspades results
-    mkdir -p metaspades_assembly
+    mkdir -p metaspades_assembly/${id}
 
     # Log the start of the process
     echo " Starting MetaSPAdes assembly for sample: $id"
@@ -51,6 +51,34 @@ process metaspades {
         echo " Error: MetaSPAdes failed to generate scaffolds for sample: $id" >&2
         exit 1
     fi
+
+    # Create spades.log file
+    echo "Creating spades.log file for sample: $id"
+    if [ -f "metaspades_assembly/${id}/spades.log" ]; then
+        # File already exists, no need to create
+        echo "Using existing spades.log file"
+    else
+        echo "MetaSPAdes assembly log for sample: $id" > metaspades_assembly/${id}/spades.log
+        echo "Generated on: \$(date)" >> metaspades_assembly/${id}/spades.log
+        echo "Sample ID: $id" >> metaspades_assembly/${id}/spades.log
+        echo "Input files: ${reads1} ${reads2}" >> metaspades_assembly/${id}/spades.log
+    fi
+
+    # Create params.txt file
+    echo "Creating params.txt file for sample: $id"
+    cat > metaspades_assembly/${id}/params.txt << EOF
+    Sample ID: $id
+    Assembler: MetaSPAdes
+    Threads: ${task.cpus}
+    Memory: ${task.memory.toMega()} MB
+    Input files:
+      Reads1: ${reads1}
+      Reads2: ${reads2}
+    Parameters:
+      --meta: true
+      --pe1-1: ${reads1}
+      --pe1-2: ${reads2}
+    EOF
 
     # Log the renaming step
     echo " Renaming contig headers for sample: $id"
