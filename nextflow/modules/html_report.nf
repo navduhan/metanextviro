@@ -23,12 +23,16 @@ process html_report {
     echo '<h1>MetaNextViro Analysis Report</h1>' >> final_report.html
 
     # FastQC Reports
-    if [ -n "${fastqc_reports}" ] && [ -d "${fastqc_reports}" ]; then
+    if [ -n "${fastqc_reports}" ]; then
         echo '<h2>FastQC Reports</h2><ul>' >> final_report.html
-        for f in ${fastqc_reports}/*; do
-            if [ -f "\$f" ]; then
-                filename=\$(basename "\$f")
-                echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
+        for report_dir in ${fastqc_reports}; do
+            if [ -d "\$report_dir" ]; then
+                for f in \$report_dir/*; do
+                    if [ -f "\$f" ]; then
+                        filename=\$(basename "\$f")
+                        echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
+                    fi
+                done
             fi
         done
         echo '</ul>' >> final_report.html
@@ -37,12 +41,16 @@ process html_report {
     fi
 
     # Kraken2 Results
-    if [ -n "${kraken2_reports}" ] && [ -d "${kraken2_reports}" ]; then
+    if [ -n "${kraken2_reports}" ]; then
         echo '<h2>Kraken2 Classification</h2><ul>' >> final_report.html
-        for f in ${kraken2_reports}/*; do
-            if [ -f "\$f" ]; then
-                filename=\$(basename "\$f")
-                echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
+        for report_dir in ${kraken2_reports}; do
+            if [ -d "\$report_dir" ]; then
+                for f in \$report_dir/*; do
+                    if [ -f "\$f" ]; then
+                        filename=\$(basename "\$f")
+                        echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
+                    fi
+                done
             fi
         done
         echo '</ul>' >> final_report.html
@@ -51,22 +59,30 @@ process html_report {
     fi
 
     # Coverage Stats
-    if [ -n "${coverage_stats}" ] && [ -f "${coverage_stats}" ]; then
+    if [ -n "${coverage_stats}" ]; then
         echo '<h2>Coverage Analysis</h2>' >> final_report.html
-        echo '<pre>' >> final_report.html
-        cat "${coverage_stats}" >> final_report.html
-        echo '</pre>' >> final_report.html
+        for stats_file in ${coverage_stats}; do
+            if [ -f "\$stats_file" ]; then
+                echo '<pre>' >> final_report.html
+                cat "\$stats_file" >> final_report.html
+                echo '</pre>' >> final_report.html
+            fi
+        done
     else
         echo '<h2>Coverage Analysis</h2><p>No coverage statistics available.</p>' >> final_report.html
     fi
 
     # CheckV Results
-    if [ -n "${checkv_results}" ] && [ -d "${checkv_results}" ]; then
+    if [ -n "${checkv_results}" ]; then
         echo '<h2>CheckV Results</h2><ul>' >> final_report.html
-        for f in ${checkv_results}/*; do
-            if [ -f "\$f" ]; then
-                filename=\$(basename "\$f")
-                echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
+        for result_dir in ${checkv_results}; do
+            if [ -d "\$result_dir" ]; then
+                for f in \$result_dir/*; do
+                    if [ -f "\$f" ]; then
+                        filename=\$(basename "\$f")
+                        echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
+                    fi
+                done
             fi
         done
         echo '</ul>' >> final_report.html
@@ -75,12 +91,16 @@ process html_report {
     fi
 
     # VirFinder Full Results
-    if [ -n "${virfinder_full}" ] && [ -d "${virfinder_full}" ]; then
+    if [ -n "${virfinder_full}" ]; then
         echo '<h2>VirFinder Full Results</h2><ul>' >> final_report.html
-        for f in ${virfinder_full}/*; do
-            if [ -f "\$f" ]; then
-                filename=\$(basename "\$f")
-                echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
+        for result_dir in ${virfinder_full}; do
+            if [ -d "\$result_dir" ]; then
+                for f in \$result_dir/*; do
+                    if [ -f "\$f" ]; then
+                        filename=\$(basename "\$f")
+                        echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
+                    fi
+                done
             fi
         done
         echo '</ul>' >> final_report.html
@@ -89,12 +109,16 @@ process html_report {
     fi
 
     # VirFinder Filtered Results (High Confidence)
-    if [ -n "${virfinder_filtered}" ] && [ -d "${virfinder_filtered}" ]; then
+    if [ -n "${virfinder_filtered}" ]; then
         echo '<h2>VirFinder High-Confidence Results</h2><ul>' >> final_report.html
-        for f in ${virfinder_filtered}/*; do
-            if [ -f "\$f" ]; then
-                filename=\$(basename "\$f")
-                echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
+        for result_dir in ${virfinder_filtered}; do
+            if [ -d "\$result_dir" ]; then
+                for f in \$result_dir/*; do
+                    if [ -f "\$f" ]; then
+                        filename=\$(basename "\$f")
+                        echo "<li><a href='\${filename}'>\${filename}</a></li>" >> final_report.html
+                    fi
+                done
             fi
         done
         echo '</ul>' >> final_report.html
