@@ -24,16 +24,16 @@ process quast {
         mkdir -p assembly_stats/${meta.id}_quast
 
         # Run QUAST
-        quast.py \
-            --output-dir assembly_stats/${meta.id}_quast \
-            --threads ${task.cpus} \
-            $args \
+        quast.py \\
+            --output-dir assembly_stats/${meta.id}_quast \\
+            --threads ${task.cpus} \\
+            $args \\
             $contigs
 
         # Create versions file
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            quast: \$(quast.py --version | sed 's/QUAST v//;s/ .*$//')
+            quast: \$(quast.py --version | sed 's/QUAST v//;s/ .*\$//')
         END_VERSIONS
         """
 
