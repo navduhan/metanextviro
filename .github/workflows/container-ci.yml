@@ -1,0 +1,318 @@
+name: Container CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'Dockerfile'
+      - 'environments/**'
+      - 'docker/**'
+      - '.github/workflows/container-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Dockerfile'
+      - 'environments/**'
+      - 'docker/**'
+      - '.github/workflows/container-ci.yml'
+  release:
+    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Container tag to build'
+        required: false
+        default: 'latest'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Job to validate container configuration
+  validate-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Dockerfile
+        run: |
+          # Check Dockerfile syntax
+          docker run --rm -i hadolint/hadolint < Dockerfile
+
+      - name: Validate environment files
+        run: |
+          # Check YAML syntax for environment files
+          for file in environments/*.yml; do
+            echo "Validating $file"
+            python -c "import yaml; yaml.safe_load(open('$file'))"
+          done
+
+      - name: Check required files
+        run: |
+          # Ensure all required files exist
+          required_files=(
+            "Dockerfile"
+            "environments/unified.yml"
+            "docker/validate_container.sh"
+            "docker/activate_env.sh"
+            "docker/build.sh"
+            "docker/test_container.sh"
+          )
+          
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "Error: Required file not found: $file"
+              exit 1
+            fi
+          done
+
+  # Job to build and test container
+  build-and-test:
+    needs: validate-config
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env-mode: [unified, per_process]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build container
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: metanextviro:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          load: true
+
+      - name: Test container startup
+        run: |
+          docker run --rm metanextviro:test echo "Container startup test passed"
+
+      - name: Run container validation
+        run: |
+          docker run --rm metanextviro:test /usr/local/bin/validate_container.sh
+
+      - name: Test environment mode
+        run: |
+          docker run --rm \
+            -e METANEXTVIRO_ENV_MODE=${{ matrix.env-mode }} \
+            metanextviro:test \
+            /usr/local/bin/activate_env.sh
+
+      - name: Run comprehensive tests
+        run: |
+          chmod +x docker/test_container.sh
+          ./docker/test_container.sh test
+
+      - name: Test tool availability
+        run: |
+          # Test key tools in unified environment
+          tools=("fastqc --version" "python --version" "conda --version")
+          for tool_cmd in "${tools[@]}"; do
+            echo "Testing: $tool_cmd"
+            docker run --rm metanextviro:test bash -c "source activate metanextviro-unified && $tool_cmd" || echo "Warning: $tool_cmd test failed"
+          done
+
+      - name: Build and push container
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Job to test container with sample data
+  integration-test:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build test container
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: metanextviro:integration-test
+          cache-from: type=gha
+          load: true
+
+      - name: Create test data
+        run: |
+          mkdir -p test-data test-output
+          # Create minimal test FASTQ files
+          echo -e "@test_read_1\nACGTACGTACGTACGT\n+\nIIIIIIIIIIIIIIII" > test-data/test_R1.fastq
+          echo -e "@test_read_2\nTGCATGCATGCATGCA\n+\nIIIIIIIIIIIIIIII" > test-data/test_R2.fastq
+          
+          # Create test samplesheet
+          echo "sample,fastq_1,fastq_2" > test-data/samplesheet.csv
+          echo "test_sample,/data/test_R1.fastq,/data/test_R2.fastq" >> test-data/samplesheet.csv
+
+      - name: Test FastQC execution
+        run: |
+          docker run --rm \
+            -v $(pwd)/test-data:/data \
+            -v $(pwd)/test-output:/output \
+            metanextviro:integration-test \
+            bash -c "source activate metanextviro-unified && fastqc /data/*.fastq -o /output"
+
+      - name: Verify test outputs
+        run: |
+          ls -la test-output/
+          if [ ! -f "test-output/test_R1_fastqc.html" ]; then
+            echo "Error: FastQC output not generated"
+            exit 1
+          fi
+
+      - name: Test environment switching
+        run: |
+          # Test unified mode
+          docker run --rm \
+            -e METANEXTVIRO_ENV_MODE=unified \
+            metanextviro:integration-test \
+            bash -c "source /usr/local/bin/activate_env.sh && conda info --envs"
+          
+          # Test per-process mode
+          docker run --rm \
+            -e METANEXTVIRO_ENV_MODE=per_process \
+            metanextviro:integration-test \
+            bash -c "source /usr/local/bin/activate_env.sh && conda info --envs"
+
+  # Job to scan container for vulnerabilities
+  security-scan:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build container for scanning
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: metanextviro:security-scan
+          load: true
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'metanextviro:security-scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Job to generate container documentation
+  generate-docs:
+    needs: [build-and-test, integration-test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build documentation container
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: metanextviro:docs
+          load: true
+
+      - name: Generate container information
+        run: |
+          mkdir -p docs/container
+          
+          # Generate environment information
+          echo "# Container Environment Information" > docs/container/environments.md
+          echo "" >> docs/container/environments.md
+          echo "## Available Environments" >> docs/container/environments.md
+          docker run --rm metanextviro:docs conda env list >> docs/container/environments.md
+          
+          echo "" >> docs/container/environments.md
+          echo "## Unified Environment Packages" >> docs/container/environments.md
+          docker run --rm metanextviro:docs bash -c "source activate metanextviro-unified && conda list" >> docs/container/environments.md
+
+      - name: Generate tool versions
+        run: |
+          echo "# Tool Versions" > docs/container/tool-versions.md
+          echo "" >> docs/container/tool-versions.md
+          
+          tools=("python" "fastqc" "multiqc" "fastp" "megahit" "blastn" "kraken2" "samtools")
+          for tool in "${tools[@]}"; do
+            echo "## $tool" >> docs/container/tool-versions.md
+            docker run --rm metanextviro:docs bash -c "source activate metanextviro-unified && $tool --version 2>&1 | head -1" >> docs/container/tool-versions.md || echo "Version info not available" >> docs/container/tool-versions.md
+            echo "" >> docs/container/tool-versions.md
+          done
+
+      - name: Upload documentation artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: container-documentation
+          path: docs/container/
+
+  # Job to cleanup old container images
+  cleanup:
+    needs: [build-and-test, integration-test, security-scan]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Delete old container images
+        uses: actions/delete-package-versions@v4
+        with:
+          package-name: ${{ github.event.repository.name }}
+          package-type: 'container'
+          min-versions-to-keep: 5
+          delete-only-untagged-versions: true

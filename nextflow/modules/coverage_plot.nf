@@ -1,12 +1,20 @@
+// Author: Naveen Duhan
+
 // Coverage plot per contig/sample
 process coverage_plot {
-    tag "$id"
-    label 'process_medium'
+    tag "$id"  // Tag the task with the sample ID for traceability
+    label 'process_medium'  // Assign a label for resource management
+
+    // Resource hints for partition selection
+    ext.memory_intensive = false
+    ext.gpu_accelerated = false
+    ext.quick_job = false
+    ext.preferred_partition = null
 
     publishDir "${params.outdir}/coverage_plots", mode: 'copy', overwrite: true
 
     input:
-        tuple val(id), path(coverage_stats)
+        tuple val(id), path(coverage_stats)  // Input: Sample ID and coverage statistics file
 
     output:
         tuple val(id), path("coverage_plot_${id}.png"), emit: plot
@@ -14,6 +22,9 @@ process coverage_plot {
 
     script:
     """
+    # Log the start of the process
+    echo " Starting coverage plot generation for sample: $id"
+    echo "Input coverage stats: ${coverage_stats}"
     python3 -c "
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -141,5 +152,14 @@ if n_contigs > 100:
 
 print(f'Successfully created coverage plot for {n_contigs} contigs')
 "
+
+    # Verify output files
+    if [ ! -f "coverage_plot_${id}.png" ]; then
+        echo " Error: Failed to generate coverage plot for sample: $id" >&2
+        exit 1
+    fi
+
+    # Log successful completion
+    echo " Coverage plot generation completed successfully for sample: $id"
     """
 } 

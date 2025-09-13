@@ -4,7 +4,13 @@
 process krona {
     tag "$id"  // Tag each task with the sample ID for traceability
 
-    label 'low'  // Assign a label for resource management
+    label 'process_low'  // Assign a label for resource management
+
+    // Resource hints for partition selection
+    ext.memory_intensive = false
+    ext.gpu_accelerated = false
+    ext.quick_job = true
+    ext.preferred_partition = null
 
     publishDir "${params.outdir}/krona_results", mode: 'copy', overwrite: true  // Define output directory
 

@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # Main MetaNextViro service with unified environment
+  metanextviro-unified:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    image: metanextviro:latest
+    container_name: metanextviro-unified
+    environment:
+      - METANEXTVIRO_ENV_MODE=unified
+    volumes:
+      - ../:/workspace
+      - metanextviro-data:/data
+      - metanextviro-results:/results
+    working_dir: /workspace
+    command: bash
+    stdin_open: true
+    tty: true
+    networks:
+      - metanextviro-network
+
+  # Development service with per-process environments
+  metanextviro-dev:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: metanextviro:latest
+    container_name: metanextviro-dev
+    environment:
+      - METANEXTVIRO_ENV_MODE=per_process
+    volumes:
+      - ../:/workspace
+      - metanextviro-data:/data
+      - metanextviro-results:/results
+      - metanextviro-cache:/opt/conda/pkgs  # Cache conda packages
+    working_dir: /workspace
+    command: bash
+    stdin_open: true
+    tty: true
+    networks:
+      - metanextviro-network
+
+  # Testing service for automated testing
+  metanextviro-test:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: metanextviro:latest
+    container_name: metanextviro-test
+    environment:
+      - METANEXTVIRO_ENV_MODE=unified
+    volumes:
+      - ../:/workspace
+      - metanextviro-test-data:/test-data
+      - metanextviro-test-results:/test-results
+    working_dir: /workspace
+    command: /usr/local/bin/validate_container.sh
+    networks:
+      - metanextviro-network
+
+  # Jupyter notebook service for interactive analysis
+  metanextviro-jupyter:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: metanextviro:latest
+    container_name: metanextviro-jupyter
+    environment:
+      - METANEXTVIRO_ENV_MODE=unified
+    volumes:
+      - ../:/workspace
+      - metanextviro-data:/data
+      - metanextviro-results:/results
+    working_dir: /workspace
+    ports:
+      - "8888:8888"
+    command: >
+      bash -c "
+        source activate metanextviro-unified &&
+        conda install -y jupyter &&
+        jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=''
+      "
+    networks:
+      - metanextviro-network
+
+volumes:
+  metanextviro-data:
+    driver: local
+  metanextviro-results:
+    driver: local
+  metanextviro-cache:
+    driver: local
+  metanextviro-test-data:
+    driver: local
+  metanextviro-test-results:
+    driver: local
+
+networks:
+  metanextviro-network:
+    driver: bridge

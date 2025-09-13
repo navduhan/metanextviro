@@ -1,6 +1,15 @@
+// Author: Naveen Duhan
+
 // Final comprehensive HTML report - runs after all processes complete
 process final_report {
-    label 'process_medium'
+    label 'process_medium'  // Assign a label for resource management
+
+    // Resource hints for partition selection
+    ext.memory_intensive = false
+    ext.gpu_accelerated = false
+    ext.quick_job = false
+    ext.preferred_partition = null
+
     publishDir "${params.outdir}/final_report", mode: 'copy', overwrite: true
 
     input:

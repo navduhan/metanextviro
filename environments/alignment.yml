@@ -1,0 +1,10 @@
+name: metanextviro-alignment
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - bowtie2=2.5.1
+  - samtools=1.17
+  - bedtools=2.31.0

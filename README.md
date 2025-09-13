@@ -101,6 +101,7 @@ sample2,/path/to/sample2_R1.fastq.gz,/path/to/sample2_R2.fastq.gz
 
 ## Features
 
+### Core Analysis Features
 - Quality control and adapter/quality trimming (FastQC, fastp, flexbar, trim_galore)
 - Multiple assembly options (MEGAHIT, metaSPAdes, or hybrid)
 - BLAST-based and Kraken2-based taxonomic annotation
@@ -111,6 +112,15 @@ sample2,/path/to/sample2_R1.fastq.gz,/path/to/sample2_R2.fastq.gz
 - Comparative heatmap visualization
 - **Comprehensive HTML report** generated after all processes complete
 - Structured, per-sample output organization
+
+### Performance Optimization Features
+- **Dynamic Resource Scaling**: Automatically adjusts CPU, memory, and time allocations based on input data size and sample count
+- **Intelligent Parallelization**: Optimizes parallel processing strategies for different process types and multi-sample workflows
+- **Resource Monitoring**: Collects detailed performance metrics including CPU usage, memory consumption, I/O statistics, and execution times
+- **Performance Profiling**: Identifies bottlenecks and generates actionable optimization recommendations
+- **Adaptive Scaling Strategies**: Choose from conservative, adaptive, or aggressive scaling approaches
+- **Process-Specific Optimization**: Tailored resource allocation for memory-intensive, CPU-intensive, GPU-accelerated, and I/O-bound processes
+- **Comprehensive Performance Reports**: Detailed HTML reports with optimization recommendations and performance analysis
 
 ## Key Improvements
 
@@ -274,6 +284,7 @@ sample2,/path/to/sample2_R1.fastq.gz,/path/to/sample2_R2.fastq.gz
 ### Parameters
 All parameters can be set on the command line or in `nextflow.config`.
 
+#### Core Parameters
 | Parameter           | Description                                                        | Default         |
 |---------------------|--------------------------------------------------------------------|-----------------|
 | --input             | Path to input samplesheet (CSV)                                    | (required)      |
@@ -292,6 +303,19 @@ All parameters can be set on the command line or in `nextflow.config`.
 | --quality           | Quality threshold for trimming                                    | 30              |
 | --profile           | Nextflow profile (local, slurm, conda, docker, singularity, etc.) | slurm           |
 | --help              | Show help message and exit                                        |                 |
+
+#### Performance Optimization Parameters
+| Parameter                           | Description                                                        | Default         |
+|-------------------------------------|--------------------------------------------------------------------|-----------------|
+| --enable_performance_optimization   | Enable performance optimization features                           | true            |
+| --enable_dynamic_scaling           | Enable dynamic resource scaling based on input size               | true            |
+| --enable_intelligent_parallelization | Enable intelligent parallelization for multi-sample processing   | true            |
+| --enable_performance_monitoring    | Enable detailed performance monitoring and reporting               | true            |
+| --scaling_strategy                 | Scaling strategy: 'adaptive', 'conservative', 'aggressive'        | adaptive        |
+| --max_parallel_samples             | Maximum number of samples to process in parallel                   | 20              |
+| --performance_profiling_level      | Profiling level: 'minimal', 'standard', 'detailed'               | standard        |
+| --input_size_threshold_gb          | Input size threshold (GB) for triggering scaling                  | 10              |
+| --sample_count_threshold           | Sample count threshold for triggering parallelization             | 5               |
 
 ### Example
 ```bash
@@ -314,6 +338,131 @@ nextflow run main.nf \
   --blastx_tool blastx \
   --blastdb_nr /path/to/nr_db \
   -profile singularity
+```
+
+## HPC Configuration Examples
+
+### SLURM Cluster Configuration
+
+#### Basic SLURM Setup
+```bash
+# Standard SLURM execution with intelligent partition selection
+nextflow run main.nf \
+  --input samplesheet.csv \
+  --outdir results \
+  --kraken2_db /path/to/kraken2_db \
+  --checkv_db /path/to/checkv_db \
+  -profile slurm
+```
+
+#### Custom Partition Configuration
+```bash
+# Override default partition mapping
+nextflow run main.nf \
+  --input samplesheet.csv \
+  --outdir results \
+  --partitions.compute 'cpu' \
+  --partitions.bigmem 'highmem' \
+  --partitions.gpu 'gpu_v100' \
+  --partitions.quick 'express' \
+  -profile slurm
+```
+
+#### User-Defined Partition Mapping
+```bash
+# Define custom partition mapping for specific processes
+nextflow run main.nf \
+  --input samplesheet.csv \
+  --outdir results \
+  --partition_selection_strategy user_defined \
+  --custom_partition_mapping.process_memory_intensive 'bigmem' \
+  --custom_partition_mapping.process_gpu 'gpu_a100' \
+  --custom_partition_mapping.process_quick 'debug' \
+  -profile slurm
+```
+
+### Environment Management Examples
+
+#### Unified Environment (Recommended for Simplicity)
+```bash
+# Single conda environment for all processes
+nextflow run main.nf \
+  --input samplesheet.csv \
+  --outdir results \
+  --env_mode unified \
+  -profile conda
+```
+
+#### Per-Process Environments (Recommended for Isolation)
+```bash
+# Separate conda environment for each process
+nextflow run main.nf \
+  --input samplesheet.csv \
+  --outdir results \
+  --env_mode per_process \
+  -profile conda
+```
+
+### Resource Optimization Examples
+
+#### Conservative Resource Usage (Shared Systems)
+```bash
+nextflow run main.nf \
+  --input samplesheet.csv \
+  --outdir results \
+  --max_retry_scaling 2 \
+  --enable_retry_scaling true \
+  --max_forks 5 \
+  -profile slurm
+```
+
+#### Aggressive Resource Usage (Dedicated Systems)
+```bash
+nextflow run main.nf \
+  --input samplesheet.csv \
+  --outdir results \
+  --max_retry_scaling 5 \
+  --enable_retry_scaling true \
+  --max_forks 20 \
+  -profile slurm
+```
+
+### Performance Optimization Examples
+
+#### High-Performance Configuration (Large Datasets)
+```bash
+nextflow run main.nf \
+  --input large_dataset.csv \
+  --outdir results \
+  --enable_performance_optimization true \
+  --scaling_strategy aggressive \
+  --max_parallel_samples 50 \
+  --performance_profiling_level detailed \
+  -profile performance_optimized
+```
+
+#### Conservative Configuration (Shared Systems)
+```bash
+nextflow run main.nf \
+  --input samplesheet.csv \
+  --outdir results \
+  --enable_performance_optimization true \
+  --scaling_strategy conservative \
+  --max_parallel_samples 5 \
+  --performance_profiling_level minimal \
+  -profile conservative_performance
+```
+
+#### Adaptive Configuration (Recommended)
+```bash
+nextflow run main.nf \
+  --input samplesheet.csv \
+  --outdir results \
+  --enable_performance_optimization true \
+  --scaling_strategy adaptive \
+  --enable_intelligent_parallelization true \
+  --enable_performance_monitoring true \
+  -profile conda
 ```
 
 ## Pipeline Steps
@@ -407,12 +556,54 @@ results/
 
 ## Configuration
 
-- `nextflow.config`: Main configuration file (edit to set default parameters, resources, and profiles)
+### Configuration Files
+
+- `nextflow.config`: Main configuration file with enhanced resource management and partition selection
+- `nextflow/configs/base.config`: Standardized resource profiles and dynamic allocation logic
+- `nextflow/configs/slurm.config`: SLURM-specific configuration with intelligent partition selection
+- `nextflow/configs/local.config`: Local execution configuration optimized for workstations
+- `nextflow/configs/environment.config`: Environment management (unified vs per-process conda environments)
+- `nextflow/configs/performance_optimization.config`: Performance optimization settings
 - `environment.yml`: Conda environment for all dependencies
 - `Dockerfile`: (Optional) Build your own container for full reproducibility
 - `nextflow/bin/`: Custom scripts for enhanced functionality
   - `run_virfinder.R`: Custom VirFinder analysis with filtering
   - `calculate_contig_coverage.sh`: Contig-level coverage calculation
+
+### Enhanced Configuration Features
+
+#### Intelligent SLURM Partition Selection
+The pipeline automatically selects the most appropriate SLURM partition based on job requirements:
+
+- **Memory-intensive processes** → `bigmem` partition
+- **GPU-accelerated processes** → `gpu` partition  
+- **Quick, small jobs** → `quickq` partition
+- **Standard computational tasks** → `compute` partition
+
+#### Flexible Environment Management
+Choose between two environment management strategies:
+
+- **Unified Environment** (`--env_mode unified`): Single conda environment for all tools
+- **Per-Process Environment** (`--env_mode per_process`): Isolated environments for each process
+
+#### Dynamic Resource Allocation
+Resources automatically scale based on:
+- Input data size
+- Number of samples
+- Process requirements
+- Retry attempts
+
+#### Configuration Parameters
+
+| Parameter | Description | Default | Options |
+|-----------|-------------|---------|---------|
+| `--env_mode` | Environment management strategy | `unified` | `unified`, `per_process` |
+| `--partition_selection_strategy` | SLURM partition selection method | `intelligent` | `intelligent`, `static`, `user_defined` |
+| `--enable_retry_scaling` | Enable automatic resource scaling on retry | `true` | `true`, `false` |
+| `--max_retry_scaling` | Maximum retry scaling factor | `3` | `1-5` |
+| `--validate_resources` | Validate resource configurations | `true` | `true`, `false` |
+| `--validate_databases` | Validate database accessibility | `true` | `true`, `false` |
+| `--strict_validation` | Enable strict validation mode | `false` | `true`, `false` |
 
 ## Resource Requirements
 
@@ -458,11 +649,28 @@ If you use this pipeline, please cite:
 - **Samtools**: Li, H., Handsaker, B., Wysoker, A., Fennell, T., Ruan, J., Homer, N., ... & Durbin, R. (2009). The Sequence Alignment/Map format and SAMtools. Bioinformatics, 25(16), 2078-2079. [https://doi.org/10.1093/bioinformatics/btp352](https://doi.org/10.1093/bioinformatics/btp352)
 - **Krona**: Ondov, B. D., Bergman, N. H., & Phillippy, A. M. (2011). Interactive metagenomic visualization in a Web browser. BMC Bioinformatics, 12(1), 1-10. [https://doi.org/10.1186/1471-2105-12-385](https://doi.org/10.1186/1471-2105-12-385)
 
+## Documentation
+
+### Comprehensive Guides
+
+- **[HPC Configuration Examples](docs/hpc_configuration_examples.md)**: Detailed configuration examples for different HPC environments (SLURM, PBS, SGE, Cloud)
+- **[Troubleshooting Guide](docs/troubleshooting_guide.md)**: Solutions for common configuration and runtime issues
+- **[Performance Tuning Guide](docs/performance_tuning_guide.md)**: Optimization strategies for different data sizes and computing environments
+
+### Quick Reference
+
+- **Configuration Management**: Enhanced resource profiles with intelligent partition selection
+- **Environment Options**: Unified vs per-process conda environments
+- **Performance Features**: Dynamic scaling, intelligent parallelization, resource monitoring
+- **SLURM Integration**: Automatic partition selection based on job requirements
+- **Validation System**: Comprehensive input and database validation with clear error messages
+
 ## Support
 
 For issues, questions, or suggestions:
 - Create an issue on GitHub
 - Contact: naveen.duhan@outlook.com
+- Check the [Troubleshooting Guide](docs/troubleshooting_guide.md) for common issues
 
 ## License
 

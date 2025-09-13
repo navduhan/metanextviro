@@ -1,0 +1,6 @@
+2025-09-12 09:35:32	-	exotic_lichterman	-	6140bb1c0078074c29d2aeb86ec115e5	201cd699-72d8-4abb-a250-3126d76cd1ea	nextflow run test_environment_management.nf --env_mode unified
+2025-09-12 09:36:08	-	berserk_mcnulty	-	6140bb1c0078074c29d2aeb86ec115e5	359c210d-2a63-4ec3-adce-f1adc54d4c33	nextflow run test_environment_management.nf --env_mode unified
+2025-09-12 09:36:33	-	maniac_celsius	-	b072e8c571c29a173a24606ab8a8ee0a	22090305-99f4-4295-969a-c2f044d83b00	nextflow run test_environment_simple.nf --env_mode unified
+2025-09-12 09:45:01	-	hungry_poincare	-	9e6da47e2e208b6cb13b2c1d48641204	857380bf-a9b9-4de2-b527-ba4562126921	nextflow run test_enhanced_error_handling.nf
+2025-09-12 09:46:52	-	jovial_ramanujan	-	c01ab0ee18a3e524a2b96845e514b8c2	9ef345b2-21e2-46fe-9adc-3596e268d828	nextflow run test_enhanced_error_handling.nf
+2025-09-12 10:01:08	-	goofy_morse	-	c90789e42527d33820cd5f59dbc8e07b	6b387e23-9e60-45d6-ad7d-543c9c76126b	nextflow run test_enhanced_report_system.nf -profile local

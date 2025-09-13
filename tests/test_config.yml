@@ -1,0 +1,163 @@
+# Test Configuration for MetaNextViro Pipeline Improvements
+# This file contains configuration settings for the comprehensive test suite
+
+# Test execution settings
+test_execution:
+  # Enable/disable specific test categories
+  unit_tests: true
+  integration_tests: true
+  performance_tests: true
+  
+  # Test timeout settings (in minutes)
+  unit_test_timeout: 30
+  integration_test_timeout: 60
+  performance_test_timeout: 120
+  
+  # Parallel test execution
+  max_parallel_tests: 4
+  
+  # Test data settings
+  use_mock_data: true
+  cleanup_test_data: true
+
+# Unit test configuration
+unit_tests:
+  config_validation:
+    enabled: true
+    test_invalid_configs: true
+    test_edge_cases: true
+  
+  partition_selection:
+    enabled: true
+    test_all_strategies: true
+    test_fallback_logic: true
+  
+  input_validation:
+    enabled: true
+    test_file_formats: ['csv', 'tsv']
+    test_corrupted_files: true
+  
+  resource_allocation:
+    enabled: true
+    test_scaling_logic: true
+    test_limit_enforcement: true
+
+# Integration test configuration
+integration_tests:
+  profile_integration:
+    enabled: true
+    test_profiles: ['local', 'slurm']
+    test_profile_switching: true
+  
+  environment_integration:
+    enabled: true
+    test_unified_env: true
+    test_per_process_env: true
+    test_env_switching: true
+  
+  end_to_end:
+    enabled: true
+    test_complete_workflows: true
+    test_error_scenarios: true
+
+# Performance test configuration
+performance_tests:
+  resource_utilization:
+    enabled: true
+    min_cpu_utilization: 70
+    min_memory_utilization: 60
+    max_io_latency_ms: 100
+  
+  scalability:
+    enabled: true
+    test_input_sizes: ['small', 'medium', 'large']
+    test_parallel_efficiency: true
+    min_parallel_efficiency: 0.6
+  
+  memory_optimization:
+    enabled: true
+    max_memory_leak_mb_per_hour: 10
+    min_gc_efficiency: 85
+    max_fragmentation_percent: 15
+
+# Test data configuration
+test_data:
+  # Sample data sizes for testing
+  small_sample_size_mb: 10
+  medium_sample_size_mb: 100
+  large_sample_size_mb: 1000
+  
+  # Number of samples for different test scenarios
+  min_samples: 2
+  max_samples: 20
+  
+  # Database paths for testing (use mock/test databases)
+  test_kraken2_db: "/tmp/test_kraken2_db"
+  test_checkv_db: "/tmp/test_checkv_db"
+  test_blast_db: "/tmp/test_blast_db"
+
+# Resource limits for testing
+resource_limits:
+  # Maximum resources to use during testing
+  max_test_cpus: 8
+  max_test_memory_gb: 32
+  max_test_time_hours: 4
+  
+  # Minimum resources required for testing
+  min_test_cpus: 2
+  min_test_memory_gb: 4
+
+# Reporting configuration
+reporting:
+  # Output formats
+  generate_html_report: true
+  generate_json_report: true
+  generate_csv_metrics: true
+  
+  # Report detail level
+  include_performance_metrics: true
+  include_error_details: true
+  include_timing_data: true
+  
+  # Report output directory
+  output_directory: "test_results"
+  
+  # Archive test results
+  archive_results: true
+  max_archived_results: 10
+
+# Environment-specific settings
+environments:
+  local:
+    # Local testing configuration
+    use_system_resources: true
+    respect_system_limits: true
+    
+  slurm:
+    # SLURM testing configuration (if available)
+    test_partition_selection: true
+    test_job_submission: false  # Set to true if SLURM is available
+    mock_slurm_commands: true
+    
+  container:
+    # Container testing configuration
+    test_docker: false  # Set to true if Docker is available
+    test_singularity: false  # Set to true if Singularity is available
+    use_test_images: true
+
+# Validation thresholds
+validation_thresholds:
+  # Performance thresholds
+  max_config_validation_time_ms: 1000
+  max_partition_selection_time_ms: 100
+  max_input_validation_time_ms: 5000
+  
+  # Accuracy thresholds
+  min_partition_selection_accuracy: 0.95
+  min_validation_accuracy: 0.95
+  max_false_positive_rate: 0.05
+  
+  # Resource efficiency thresholds
+  min_cpu_efficiency: 0.70
+  min_memory_efficiency: 0.60
+  max_resource_overhead: 0.20

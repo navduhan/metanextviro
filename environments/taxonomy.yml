@@ -1,0 +1,10 @@
+name: metanextviro-taxonomy
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - kraken2=2.1.2
+  - krona=2.8.1
+  - pandas=2.0.3

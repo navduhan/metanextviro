@@ -2,9 +2,15 @@
 
 process flexbar {
     tag "$id"  // Tagging process with sample ID for traceability
-    label 'medium'
+    label 'process_medium'
 
-    publishDir "${params.outdir}", mode: 'copy', overwrite: true
+    // Resource hints for partition selection
+    ext.memory_intensive = false
+    ext.gpu_accelerated = false
+    ext.quick_job = false
+    ext.preferred_partition = null
+
+    publishDir "${params.outdir}/flexbar_results", mode: 'copy', overwrite: true
 
     input:
         tuple val(id), path(reads1), path(reads2)  // Input: Sample ID and reads (paired-end or single-end)

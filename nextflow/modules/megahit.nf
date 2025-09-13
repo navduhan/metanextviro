@@ -3,9 +3,15 @@
 process megahit {
     tag "$id"  // Tag the task with the sample ID for traceability
 
-    label 'high'  // Assign a label for resource management
+    label 'process_high'  // Assign a label for resource management
 
-    publishDir "${params.outdir}", mode: 'copy', overwrite: true  // Define output directory
+    // Resource hints for partition selection
+    ext.memory_intensive = false
+    ext.gpu_accelerated = false
+    ext.quick_job = false
+    ext.preferred_partition = null
+
+    publishDir "${params.outdir}/megahit_assembly", mode: 'copy', overwrite: true  // Define output directory
 
     input:
         tuple val(id), path(reads1), path(reads2)  // Input: Sample ID and reads (paired or single)

@@ -1,9 +1,15 @@
 process hybrid {
     tag "$id"  // Tag the task with the sample ID for traceability
 
-    label 'medium'  // Assign a label for resource management
+    label 'process_medium'  // Assign a label for resource management
 
-    publishDir "${params.outdir}", mode: 'copy', overwrite: true  // Define output directory
+    // Resource hints for partition selection
+    ext.memory_intensive = false
+    ext.gpu_accelerated = false
+    ext.quick_job = false
+    ext.preferred_partition = null
+
+    publishDir "${params.outdir}/hybrid_assembly", mode: 'copy', overwrite: true  // Define output directory
 
     input:
         tuple val(id), path(megahit_contigs), path(metaspades_contigs)  // Input: Sample ID and contig files from MEGAHIT and metaSPAdes

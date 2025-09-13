@@ -2,7 +2,13 @@
 
 process blastn_viruses {
     tag "$id"  // Tag the task with the query ID for traceability
-    label 'blast'  // Assign a label for resource management
+    label 'process_high'  // Assign a label for resource management
+
+    // Resource hints for partition selection
+    ext.memory_intensive = false
+    ext.gpu_accelerated = false
+    ext.quick_job = false
+    ext.preferred_partition = null
 
     publishDir "${params.outdir}/blast_results", mode: 'copy', overwrite: true  // Define output directory and handling
 

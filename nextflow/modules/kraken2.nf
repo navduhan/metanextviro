@@ -3,7 +3,13 @@
 process kraken2 {
     tag "$id"  // Tag each task with the sample ID for better traceability
 
-    label 'vhigh'  // Assign a label for resource management
+    label 'process_memory_intensive'  // Assign a label for resource management
+
+    // Resource hints for partition selection
+    ext.memory_intensive = true
+    ext.gpu_accelerated = false
+    ext.quick_job = false
+    ext.preferred_partition = 'bigmem'
 
     publishDir "${params.outdir}/kraken2_results", mode: 'copy', overwrite: true  // Define and manage the output directory
 

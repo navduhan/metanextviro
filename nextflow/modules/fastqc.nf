@@ -2,10 +2,16 @@
 
 process fastqc {
     tag "$id"  // Tagging process with sample ID for better traceability
-    label 'low'
+    label 'process_low'
+
+    // Resource hints for partition selection
+    ext.memory_intensive = false
+    ext.gpu_accelerated = false
+    ext.quick_job = true
+    ext.preferred_partition = null
 
     // Use publishDir to save outputs in a specific directory
-    publishDir "${params.outdir}", mode: 'copy', overwrite: true
+    publishDir "${params.outdir}/fastqc_results", mode: 'copy', overwrite: true
 
     input:
     tuple val(id), path(reads1), path(reads2)  // Input: Sample ID and read file paths (paired-end or single-end)
