@@ -1,7 +1,7 @@
 FROM continuumio/miniconda3:4.12.0
 
 LABEL maintainer="Naveen Duhan <naveen.duhan@outlook.com>"
-LABEL description="MetaNextViro: Viral and Bacterial Metagenomics Pipeline"
+LABEL description="MetaNextViro: Viral Metagenomics Pipeline"
 
 # Set up environment
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8

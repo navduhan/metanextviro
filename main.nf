@@ -42,12 +42,11 @@ workflow {
 // Helper functions
 def helpMSG() {
     println """
-    ____________________________________________________________________________________________
-
-                                MetaNextViro: Viral and Bacterial Metagenomics Pipeline
-
-                                Author : Naveen Duhan (naveen.duhan@outlook.com)
-    ____________________________________________________________________________________________
+    ______________________________________________________________________________________________________________________________________________
+    
+                                MetaNextViro: High-Throughput Virus Identification and Metagenomic Analysis Pipeline
+                                                Author : Naveen Duhan (naveen.duhan@outlook.com)
+    ______________________________________________________________________________________________________________________________________________
 
     Usage example:
 
@@ -69,7 +68,19 @@ def helpMSG() {
     --quality         Quality threshold for trimming (default: 30)
     --profile         Nextflow profile to use (default: 'slurm')
     --help            Show this help message and exit
-    
+
+    Skip options:
+    --skip_quality              Skip the quality control step (FastQC)
+    --skip_trimming             Skip the trimming step
+    --skip_assembly             Skip the assembly step
+    --skip_blast_annotation     Skip the BLAST annotation step
+    --skip_taxonomic_profiling  Skip the taxonomic profiling step (Kraken2)
+    --skip_viral_analysis       Skip the viral analysis step (CheckV & VirFinder)
+    --skip_coverage_analysis    Skip the coverage analysis step
+    --skip_contig_organization  Skip the contig organization step
+    --skip_visualization        Skip the visualization step
+    --skip_final_report         Skip the final report generation
+
 
     Example samplesheet:
     sample,fastq_1,fastq_2
