@@ -1,0 +1,24 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon\r files
+Icon$'\r'
+
+# Thumbnails
+._*
+
+# Spotlight and Trash
+.Spotlight-V100
+.Trashes
+
+# Other macOS system files
+.fseventsd
+
+# macOS Finder icon files (with carriage return at end)
+Icon?
+
+# Nextflow files
+.nextflow.log*
+.nextflow/
