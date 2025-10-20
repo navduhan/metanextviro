@@ -17,6 +17,7 @@ process metaspades {
         tuple val(id), path("metaspades_assembly/${id}/scaffolds.fasta"), emit: raw_scaffolds
 
     script:
+    def mem = task.memory ? task.memory.toMega() : 16000  // Default to 16GB if not set
     """
     # Log the start of the process
     echo " Starting MetaSPAdes assembly for sample: $id"
@@ -31,7 +32,7 @@ process metaspades {
             --meta \\
             --pe1-1 ${reads1} --pe1-2 ${reads2} \\
             -t ${task.cpus} \\
-            -m ${task.memory.toMega()} \\
+            -m ${mem} \\
             -o metaspades_assembly/${id}
     else
         echo " Running MetaSPAdes in single-end mode..."
@@ -39,7 +40,7 @@ process metaspades {
             --meta \\
             -s ${reads1} \\
             -t ${task.cpus} \\
-            -m ${task.memory.toMega()} \\
+            -m ${mem} \\
             -o metaspades_assembly/${id}
     fi
 
@@ -62,7 +63,7 @@ process metaspades {
     Sample ID: $id
     Assembler: MetaSPAdes
     Threads: ${task.cpus}
-    Memory: ${task.memory.toMega()} MB
+    Memory: ${mem} MB
     Input files:
       Reads1: ${reads1}
       Reads2: ${reads2}
