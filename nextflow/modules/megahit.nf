@@ -63,22 +63,22 @@ process megahit {
     fi
 
     # Create params.json file
-    cat > megahit_assembly/${id}/params.json << EOF
-    {
-        "sample_id": "$id",
-        "assembler": "megahit",
-        "min_contig_length": "${params.min_contig_length}",
-        "threads": "${task.cpus}",
-        "input_files": {
-            "reads1": "${reads1}",
-            "reads2": "${reads2}"
-        },
-        "parameters": {
-            "no_mercy": true,
-            "out_prefix": "$id"
-        }
+    cat > megahit_assembly/${id}/params.json <<EOF
+{
+    "sample_id": "$id",
+    "assembler": "megahit",
+    "min_contig_length": "${params.min_contig_length}",
+    "threads": "${task.cpus}",
+    "input_files": {
+        "reads1": "${reads1}",
+        "reads2": "${reads2}"
+    },
+    "parameters": {
+        "no_mercy": true,
+        "out_prefix": "$id"
     }
-    EOF
+}
+EOF
 
     # Log the renaming step
     echo " Renaming contig headers for sample: $id"
