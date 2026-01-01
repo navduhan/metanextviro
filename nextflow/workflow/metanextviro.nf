@@ -106,38 +106,6 @@ workflow metanextviro {
         }
         
         if (!params.skip_final_report) {
-            // Prepare optional assembly outputs with proper null handling
-            // Check if assembly was run before accessing ASSEMBLY.out
-            def assemblyRan = !params.skip_assembly
-            
-            def megahit_logs_ch = (assemblyRan && ASSEMBLY.out.megahit_logs) 
-                ? ASSEMBLY.out.megahit_logs.map { id, path -> path }.collect() 
-                : Channel.value([])
-            def megahit_params_ch = (assemblyRan && ASSEMBLY.out.megahit_params) 
-                ? ASSEMBLY.out.megahit_params.map { id, path -> path }.collect() 
-                : Channel.value([])
-            def megahit_raw_contigs_ch = (assemblyRan && ASSEMBLY.out.megahit_raw_contigs) 
-                ? ASSEMBLY.out.megahit_raw_contigs.map { id, path -> path }.collect() 
-                : Channel.value([])
-            def metaspades_logs_ch = (assemblyRan && ASSEMBLY.out.metaspades_logs) 
-                ? ASSEMBLY.out.metaspades_logs.map { id, path -> path }.collect() 
-                : Channel.value([])
-            def metaspades_params_ch = (assemblyRan && ASSEMBLY.out.metaspades_params) 
-                ? ASSEMBLY.out.metaspades_params.map { id, path -> path }.collect() 
-                : Channel.value([])
-            def metaspades_raw_scaffolds_ch = (assemblyRan && ASSEMBLY.out.metaspades_raw_scaffolds) 
-                ? ASSEMBLY.out.metaspades_raw_scaffolds.map { id, path -> path }.collect() 
-                : Channel.value([])
-            def hybrid_merged_ch = (assemblyRan && ASSEMBLY.out.hybrid_merged) 
-                ? ASSEMBLY.out.hybrid_merged.map { id, path -> path }.collect() 
-                : Channel.value([])
-            def hybrid_cdhit_ch = (assemblyRan && ASSEMBLY.out.hybrid_cdhit) 
-                ? ASSEMBLY.out.hybrid_cdhit.map { id, path -> path }.collect() 
-                : Channel.value([])
-            def hybrid_cdhit_clstr_ch = (assemblyRan && ASSEMBLY.out.hybrid_cdhit_clstr) 
-                ? ASSEMBLY.out.hybrid_cdhit_clstr.map { id, path -> path }.collect() 
-                : Channel.value([])
-            
             FINAL_REPORT(
                 ch_kraken2_reports.map { id, path -> path }.collect(),      // tuple [id, path] -> extract path
                 ch_quality_reports.collect(),                                // already just paths (no tuple)
@@ -146,17 +114,7 @@ workflow metanextviro {
                 ch_virfinder_full.collect(),                                 // already just paths (mapped in subworkflow)
                 ch_virfinder_filtered.collect(),                             // already just paths (mapped in subworkflow)
                 ch_blastn_results_nt.map { id, path -> path }.collect(),     // tuple [id, path] -> extract path
-                ch_contigs.map { id, path -> path }.collect(),               // tuple [id, path] -> extract path
-                megahit_logs_ch,
-                megahit_params_ch,
-                megahit_raw_contigs_ch,
-                metaspades_logs_ch,
-                metaspades_params_ch,
-                metaspades_raw_scaffolds_ch,
-                hybrid_merged_ch,
-                hybrid_cdhit_ch,
-                hybrid_cdhit_clstr_ch,
-                ch_organized_dirs.map { id, path -> path }.collect()         // tuple [id, path] -> extract path
+                ch_contigs.map { id, path -> path }.collect()                // tuple [id, path] -> extract path
             )
             ch_final_report = FINAL_REPORT.out.report
         }
