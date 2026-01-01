@@ -12,16 +12,16 @@ process final_report {
         path virfinder_filtered
         path blast_results
         path assembly_results
-        path megahit_logs
-        path megahit_params
-        path megahit_raw_contigs
-        path metaspades_logs
-        path metaspades_params
-        path metaspades_raw_scaffolds
-        path hybrid_merged
-        path hybrid_cdhit
-        path hybrid_cdhit_clstr
-        path organized_dirs
+        path(megahit_logs, stageAs: 'megahit_logs/*')
+        path(megahit_params, stageAs: 'megahit_params/*')
+        path(megahit_raw_contigs, stageAs: 'megahit_raw_contigs/*')
+        path(metaspades_logs, stageAs: 'metaspades_logs/*')
+        path(metaspades_params, stageAs: 'metaspades_params/*')
+        path(metaspades_raw_scaffolds, stageAs: 'metaspades_raw_scaffolds/*')
+        path(hybrid_merged, stageAs: 'hybrid_merged/*')
+        path(hybrid_cdhit, stageAs: 'hybrid_cdhit/*')
+        path(hybrid_cdhit_clstr, stageAs: 'hybrid_cdhit_clstr/*')
+        path(organized_dirs, stageAs: 'organized/*')
 
     output:
         path "final_report.html", emit: report
