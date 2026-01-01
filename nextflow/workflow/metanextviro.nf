@@ -139,14 +139,14 @@ workflow metanextviro {
                 : Channel.value([])
             
             FINAL_REPORT(
-                ch_kraken2_reports.map { id, path -> path }.collect(),
-                ch_quality_reports.map { id, path -> path }.collect(),
-                ch_coverage_stats.map { id, path -> path }.collect(),
-                ch_checkv_report.map { id, path -> path }.collect(),
-                ch_virfinder_full.map { id, path -> path }.collect(),
-                ch_virfinder_filtered.map { id, path -> path }.collect(),
-                ch_blastn_results_nt.map { id, path -> path }.collect(),
-                ch_contigs.map { id, path -> path }.collect(),
+                ch_kraken2_reports.map { id, path -> path }.collect(),      // tuple [id, path] -> extract path
+                ch_quality_reports.collect(),                                // already just paths (no tuple)
+                ch_coverage_stats.map { id, path -> path }.collect(),        // tuple [id, path] -> extract path
+                ch_checkv_report.map { id, path -> path }.collect(),         // tuple [id, path] -> extract path
+                ch_virfinder_full.collect(),                                 // already just paths (mapped in subworkflow)
+                ch_virfinder_filtered.collect(),                             // already just paths (mapped in subworkflow)
+                ch_blastn_results_nt.map { id, path -> path }.collect(),     // tuple [id, path] -> extract path
+                ch_contigs.map { id, path -> path }.collect(),               // tuple [id, path] -> extract path
                 megahit_logs_ch,
                 megahit_params_ch,
                 megahit_raw_contigs_ch,
@@ -156,7 +156,7 @@ workflow metanextviro {
                 hybrid_merged_ch,
                 hybrid_cdhit_ch,
                 hybrid_cdhit_clstr_ch,
-                ch_organized_dirs.map { id, path -> path }.collect()
+                ch_organized_dirs.map { id, path -> path }.collect()         // tuple [id, path] -> extract path
             )
             ch_final_report = FINAL_REPORT.out.report
         }
