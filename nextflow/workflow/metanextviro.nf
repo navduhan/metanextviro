@@ -107,14 +107,14 @@ workflow metanextviro {
         
         if (!params.skip_final_report) {
             FINAL_REPORT(
-                ch_kraken2_reports.map { id, path -> path }.collect(),      // tuple [id, path] -> extract path
-                ch_quality_reports.collect(),                                // already just paths (no tuple)
-                ch_coverage_stats.map { id, path -> path }.collect(),        // tuple [id, path] -> extract path
-                ch_checkv_report.map { id, path -> path }.collect(),         // tuple [id, path] -> extract path
-                ch_virfinder_full.collect(),                                 // already just paths (mapped in subworkflow)
-                ch_virfinder_filtered.collect(),                             // already just paths (mapped in subworkflow)
-                ch_blastn_results_nt.map { id, path -> path }.collect(),     // tuple [id, path] -> extract path
-                ch_contigs.map { id, path -> path }.collect()                // tuple [id, path] -> extract path
+                ch_kraken2_reports.map { id, path -> path }.collect().ifEmpty([]),
+                ch_quality_reports.collect().ifEmpty([]),
+                ch_coverage_stats.map { id, path -> path }.collect().ifEmpty([]),
+                ch_checkv_report.map { id, path -> path }.collect().ifEmpty([]),
+                ch_virfinder_full.collect().ifEmpty([]),
+                ch_virfinder_filtered.collect().ifEmpty([]),
+                ch_blastn_results_nt.map { id, path -> path }.collect().ifEmpty([]),
+                ch_contigs.map { id, path -> path }.collect().ifEmpty([])
             )
             ch_final_report = FINAL_REPORT.out.report
         }
