@@ -105,7 +105,7 @@ workflow metanextviro {
             ch_organization_summaries = CONTIG_ORGANIZATION.out.summaries
         }
         
-        if (!params.skip_final_report) {
+        if (!params.skip_final_report && !params.skip_report) {
             FINAL_REPORT(
                 ch_kraken2_reports.map { id, path -> path }.collect().ifEmpty([]),
                 ch_quality_reports.collect().ifEmpty([]),

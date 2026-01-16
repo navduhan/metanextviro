@@ -80,6 +80,7 @@ def helpMSG() {
     --skip_contig_organization  Skip the contig organization step
     --skip_visualization        Skip the visualization step
     --skip_final_report         Skip the final report generation
+    --skip_report               Alias for --skip_final_report
 
 
     Example samplesheet:
