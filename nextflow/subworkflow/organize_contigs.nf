@@ -7,8 +7,7 @@ process ORGANIZE_CONTIGS {
     publishDir "${params.outdir}/organized_contigs", mode: 'copy'
 
     input:
-        tuple val(id), path(blast_results)
-        tuple val(id2), path(contigs)
+        tuple val(id), path(blast_results), path(contigs)
 
     output:
         tuple val(id), path("${id}"), emit: organized_dir
@@ -26,12 +25,15 @@ process ORGANIZE_CONTIGS {
 
 workflow CONTIG_ORGANIZATION {
     take:
-        blast_results_ch    // Channel: [ val(id), path(blast_results) ]
+        blast_results_ch    // Channel: [ val(id), [path(blast_results), ...] ]
         contigs_ch         // Channel: [ val(id), path(contigs) ]
 
     main:
+        // Join the channels by ID to ensure correct sample pairing
+        ch_input = blast_results_ch.join(contigs_ch)
+
         // Organize contigs by taxonomy
-        ORGANIZE_CONTIGS(blast_results_ch, contigs_ch)
+        ORGANIZE_CONTIGS(ch_input)
 
     emit:
         organized_dirs = ORGANIZE_CONTIGS.out.organized_dir

@@ -36,8 +36,8 @@ def create_enhanced_header(record, taxonomy_info, sample_id):
     species = taxonomy_info.get('species', 'Unknown')
     subject_title = taxonomy_info.get('subject_title', 'Unknown')
     
-    # Create enhanced header
-    enhanced_header = f">{original_id}|sample={sample_id}|superkingdom={superkingdom}|phylum={phylum}|class={class_taxon}|order={order}|family={family}|genus={genus}|species={species}|subject={subject_title}"
+    # Create enhanced header (no leading '>')
+    enhanced_header = f"{original_id}|sample={sample_id}|superkingdom={superkingdom}|phylum={phylum}|class={class_taxon}|order={order}|family={family}|genus={genus}|species={species}|subject={subject_title}"
     
     # Add original description if available
     if original_desc:
@@ -60,23 +60,52 @@ def write_fasta(sequence_record, output_file, enhanced_header=None):
         else:
             SeqIO.write(sequence_record, f, 'fasta')
 
-def organize_contigs(blast_results, fasta_file, output_dir, sample_id):
+def organize_contigs(blast_results_list, fasta_file, output_dir, sample_id):
     """Organize contigs based on BLAST results and taxonomy."""
     
     # Create directory structure
     base_dir, virus_dir, bacteria_dir = create_directory_structure(output_dir, sample_id)
     
-    # Read BLAST results
-    df = pd.read_csv(blast_results, sep='\t')
+    # Read and merge BLAST results
+    dfs = []
+    for br in blast_results_list:
+        if os.path.exists(br) and os.path.getsize(br) > 0:
+            try:
+                tdf = pd.read_csv(br, sep='\t')
+                if not tdf.empty:
+                    dfs.append(tdf)
+            except Exception as e:
+                print(f"Warning: Could not read BLAST result {br}: {e}")
     
-    # Normalize column names (strip whitespace, lower-case for matching)
-    df.columns = [col.strip() for col in df.columns]
+    if not dfs:
+        print("No BLAST results found to process.")
+        # Just copy all contigs to unclassified
+        unclass_dir = base_dir / "unclassified"
+        unclass_dir.mkdir(exist_ok=True)
+        for record in SeqIO.parse(fasta_file, 'fasta'):
+            write_fasta(record, unclass_dir / f"{record.id}.fasta")
+        
+        with open(base_dir / "classification_summary.txt", 'w') as f:
+            f.write(f"Classification Summary for {sample_id}\n")
+            f.write("=" * 50 + "\n\n")
+            f.write("No BLAST hits found. All contigs are unclassified.\n")
+        return
+
+    df = pd.concat(dfs, ignore_index=True)
+    
+    # Normalize column names (strip whitespace, lower-case for robust matching)
+    df.columns = [col.strip().lower() for col in df.columns]
+    
+    # If multiple hits for same contig across files, pick the one with highest bit_score
+    if 'bit_score' in df.columns:
+        df = df.sort_values(by=['query_id', 'bit_score'], ascending=[True, False])
+    
+    df = df.groupby('query_id').first().reset_index()
     
     # Create a dictionary to store contig classifications with full taxonomy
     contig_info = {}
     for _, row in df.iterrows():
         contig_id = row['query_id']
-        # Use .get() with default empty string, then lower for superkingdom
         superkingdom = str(row.get('superkingdom', '')).strip().lower()
         phylum = str(row.get('phylum', '')).strip().replace(' ', '_')
         class_taxon = str(row.get('class', '')).strip().replace(' ', '_')
@@ -105,7 +134,6 @@ def organize_contigs(blast_results, fasta_file, output_dir, sample_id):
     
     # Process FASTA file and organize contigs
     unclassified_contigs = []
-    classified_families = {'viruses': set(), 'bacteria': set()}
     taxonomy_summary = {'viruses': {}, 'bacteria': {}}
     
     for record in SeqIO.parse(fasta_file, 'fasta'):
@@ -119,7 +147,6 @@ def organize_contigs(blast_results, fasta_file, output_dir, sample_id):
                 family_dir = virus_dir if org_type == 'viruses' else bacteria_dir
                 family_dir = family_dir / family
                 family_dir.mkdir(exist_ok=True)
-                classified_families[org_type].add(family)
                 
                 # Track taxonomy for summary
                 if family not in taxonomy_summary[org_type]:
@@ -132,17 +159,17 @@ def organize_contigs(blast_results, fasta_file, output_dir, sample_id):
                 taxonomy_summary[org_type][family]['species'].add(info['species'])
                 taxonomy_summary[org_type][family]['genera'].add(info['genus'])
             
-            # Determine output directory and filename
+            # Determine output directory
             if family == 'unclassified':
-                output_dir = virus_dir / 'unclassified' if org_type == 'viruses' else bacteria_dir / 'unclassified'
+                output_dir_path = virus_dir / 'unclassified' if org_type == 'viruses' else bacteria_dir / 'unclassified'
             else:
-                output_dir = virus_dir / family if org_type == 'viruses' else bacteria_dir / family
+                output_dir_path = virus_dir / family if org_type == 'viruses' else bacteria_dir / family
             
             # Create enhanced header
             enhanced_header = create_enhanced_header(record, info, sample_id)
             
             # Write contig to appropriate file with enhanced header
-            output_file = output_dir / f"{record.id}.fasta"
+            output_file = output_dir_path / f"{record.id}.fasta"
             write_fasta(record, output_file, enhanced_header)
         else:
             unclassified_contigs.append(record)
@@ -192,7 +219,7 @@ def organize_contigs(blast_results, fasta_file, output_dir, sample_id):
 
 def main():
     parser = argparse.ArgumentParser(description="Organize contigs based on BLAST results and taxonomy")
-    parser.add_argument("-b", "--blast_results", required=True, help="Path to BLAST results file")
+    parser.add_argument("-b", "--blast_results", required=True, nargs='+', help="Path to one or more BLAST results files")
     parser.add_argument("-f", "--fasta_file", required=True, help="Path to input FASTA file")
     parser.add_argument("-o", "--output_dir", required=True, help="Output directory")
     parser.add_argument("-s", "--sample_id", required=True, help="Sample ID")
@@ -202,4 +229,4 @@ def main():
     organize_contigs(args.blast_results, args.fasta_file, args.output_dir, args.sample_id)
 
 if __name__ == "__main__":
-    main() 
+    main()

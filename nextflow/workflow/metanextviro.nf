@@ -97,8 +97,14 @@ workflow metanextviro {
         }
         
         if (!params.skip_contig_organization) {
+            // Combine all available BLAST results for more comprehensive organization
+            ch_all_blast = ch_blastn_results_nt
+                .mix(ch_blastn_results_viruses)
+                .mix(ch_blastx_results_nr)
+                .groupTuple()
+
             CONTIG_ORGANIZATION(
-                ch_blastn_results_nt,
+                ch_all_blast,
                 ch_contigs
             )
             ch_organized_dirs = CONTIG_ORGANIZATION.out.organized_dirs
