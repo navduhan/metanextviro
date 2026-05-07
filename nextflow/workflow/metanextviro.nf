@@ -10,7 +10,6 @@ include { VIRAL_ANALYSIS } from '../subworkflow/viral_analysis.nf'
 include { CONTIG_ORGANIZATION } from '../subworkflow/organize_contigs.nf'
 include { VISUALIZATION } from '../subworkflow/visualization.nf'
 include { COVERAGE_ANALYSIS } from '../subworkflow/coverage_analysis.nf'
-include { FINAL_REPORT_SUBWORKFLOW as FINAL_REPORT } from '../subworkflow/final_report_subworkflow.nf'
 
 workflow metanextviro {
     take:
@@ -44,7 +43,6 @@ workflow metanextviro {
         ch_coverage_distribution_plot = Channel.empty()
         ch_organized_dirs = Channel.empty()
         ch_organization_summaries = Channel.empty()
-        ch_final_report = Channel.empty()
 
         // Run pipeline steps
         if (!params.skip_quality) {
@@ -99,9 +97,9 @@ workflow metanextviro {
         if (!params.skip_contig_organization) {
             // Combine all available BLAST results for more comprehensive organization
             ch_all_blast = ch_blastn_results_nt
-                .mix(ch_blastn_results_viruses)
-                .mix(ch_blastx_results_nr)
+                .mix(ch_blastn_results_viruses, ch_blastx_results_nr)
                 .groupTuple()
+                .map { id, results -> [id, results.flatten()] }
 
             CONTIG_ORGANIZATION(
                 ch_all_blast,
@@ -109,20 +107,6 @@ workflow metanextviro {
             )
             ch_organized_dirs = CONTIG_ORGANIZATION.out.organized_dirs
             ch_organization_summaries = CONTIG_ORGANIZATION.out.summaries
-        }
-        
-        if (!params.skip_final_report && !params.skip_report) {
-            FINAL_REPORT(
-                ch_kraken2_reports.map { id, path -> path }.collect().ifEmpty([]),
-                ch_quality_reports.collect().ifEmpty([]),
-                ch_coverage_stats.map { id, path -> path }.collect().ifEmpty([]),
-                ch_checkv_report.map { id, path -> path }.collect().ifEmpty([]),
-                ch_virfinder_full.collect().ifEmpty([]),
-                ch_virfinder_filtered.collect().ifEmpty([]),
-                ch_blastn_results_nt.map { id, path -> path }.collect().ifEmpty([]),
-                ch_contigs.map { id, path -> path }.collect().ifEmpty([])
-            )
-            ch_final_report = FINAL_REPORT.out.report
         }
 
     emit:
@@ -158,9 +142,7 @@ workflow metanextviro {
         // Contig organization outputs
         organized_dirs = ch_organized_dirs
         organization_summaries = ch_organization_summaries
-        
-        // Final comprehensive report (generated after all processes complete)
-        final_html_report = ch_final_report
+
         coverage_plots = ch_coverage_plot
         coverage_distributions = ch_coverage_distribution_plot
 }

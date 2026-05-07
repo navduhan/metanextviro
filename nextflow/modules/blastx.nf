@@ -10,7 +10,7 @@ process blastx {
         tuple val(id), path(fasta_file)  // Input: Sample ID and FASTA file
 
     output:
-        path "${id}_best_hits_nr.xls", emit: formatted_blast_output  // Emit processed BLAST results in Excel format
+        tuple val(id), path("${id}_best_hits_nr.xls"), emit: formatted_blast_output  // Emit processed BLAST results in Excel format
 
     script:
     """

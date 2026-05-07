@@ -18,8 +18,8 @@ workflow ASSEMBLY {
             megahit(raw_reads1.join(raw_reads2))
             
             // Prepare input for QUAST with metadata
-            quast_ch = megahit.out.contigs.map { id, contigs ->
-                [ [ id: id ], contigs ]
+            quast_ch = megahit.out.contigs.map { id, fasta ->
+                [ [ id: id ], fasta ]
             }
             quast(quast_ch)
             
@@ -31,8 +31,8 @@ workflow ASSEMBLY {
             metaspades(raw_reads1.join(raw_reads2))
             
             // Prepare input for QUAST with metadata
-            quast_ch = metaspades.out.contigs.map { id, contigs ->
-                [ [ id: id ], contigs ]
+            quast_ch = metaspades.out.contigs.map { id, fasta ->
+                [ [ id: id ], fasta ]
             }
             quast(quast_ch)
             
@@ -46,8 +46,8 @@ workflow ASSEMBLY {
             hybrid(megahit.out.contigs.join(metaspades.out.contigs))
             
             // Prepare input for QUAST with metadata
-            quast_ch = hybrid.out.contigs.map { id, contigs ->
-                [ [ id: id ], contigs ]
+            quast_ch = hybrid.out.contigs.map { id, fasta ->
+                [ [ id: id ], fasta ]
             }
             quast(quast_ch)
             
