@@ -233,6 +233,7 @@ For maximum reproducibility, especially on an HPC, it is recommended to use Dock
      --input <your_samplesheet>.csv \
      --outdir <output_dir> \
      --kraken2_db <path_to_kraken2_db> \
+     --account <slurm_account> \
      -profile singularity,slurm
    ```
    Nextflow will automatically pull the Docker image and convert it to a Singularity image.
@@ -261,6 +262,7 @@ All parameters can be set on the command line or in `nextflow.config`.
 | --min_contig_length | Minimum contig length for assembly                                | 200               |
 | --quality           | Quality threshold for trimming                                    | 30                |
 | --profile           | Nextflow profile (e.g., `local`, `slurm`, `conda`, `docker`)      | `slurm`           |
+| --account           | SLURM account to charge; select one account for each run          | scheduler default |
 | --help              | Show help message and exit                                        |                   |
 
 By default, BLAST searches only the database configured by `--blastdb_viruses`
@@ -286,6 +288,14 @@ requires assembly and BLAST annotation results; it can use the default viruses-o
 ## Resource Management on SLURM
 
 The pipeline is configured to be efficient on HPC systems using a SLURM executor. Instead of requesting large resources for every job, it uses a label system to assign resources based on the task's requirements.
+
+If you belong to multiple SLURM accounts, select the account for a run with `--account`:
+
+```bash
+nextflow run main.nf --input samples.csv --account my_project -profile slurm
+```
+
+When `--account` is omitted, SLURM uses your default account.
 
 The defined labels in `nextflow/configs/slurm.config` are:
 

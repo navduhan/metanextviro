@@ -72,6 +72,7 @@ def helpMSG() {
     --min_contig_length Minimum contig length for assembly (default: 200)
     --quality         Quality threshold for trimming (default: 30)
     --profile         Nextflow profile to use (default: 'slurm')
+    --account         SLURM account to charge (optional; uses the scheduler default when omitted)
     --help            Show this help message and exit
 
     Skip options:
