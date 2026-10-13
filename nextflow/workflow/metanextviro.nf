@@ -75,7 +75,7 @@ workflow metanextviro {
             ch_krona_html = TAXONOMIC_PROFILING.out.krona_html
         }
 
-        if (!params.skip_viral_analysis) {
+        if (!params.skip_viral_analysis && (params.run_checkv || params.run_virfinder)) {
             VIRAL_ANALYSIS(ch_contigs)
             ch_checkv_report = VIRAL_ANALYSIS.out.checkv_report
             ch_virfinder_full = VIRAL_ANALYSIS.out.virfinder_full
@@ -94,7 +94,7 @@ workflow metanextviro {
             ch_coverage_distribution_plot = COVERAGE_ANALYSIS.out.distribution_plot
         }
         
-        if (!params.skip_contig_organization) {
+        if (params.organize_contigs && !params.skip_contig_organization) {
             // Combine all available BLAST results for more comprehensive organization
             ch_all_blast = ch_blastn_results_nt
                 .mix(ch_blastn_results_viruses, ch_blastx_results_nr)

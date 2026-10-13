@@ -14,29 +14,43 @@ workflow BLAST_ANNOTATION {
         def blastn_channel = Channel.empty()
         def blastx_channel = Channel.empty()
 
-        // Log the selected BLAST options
-        println "Selected BLAST options: ${params.blast_options}"
+        // Accept config/params-file lists and comma-separated command-line values.
+        def selected_options = (params.blast_options instanceof Collection
+            ? params.blast_options
+            : params.blast_options.toString().split(','))
+            .collect { option -> option.toString().trim().toLowerCase() }
+            .collect { option -> option == 'nt_viruses' ? 'viruses' : option }
+            .unique()
+
+        def invalid_options = selected_options.findAll { option -> !(option in ['all', 'viruses', 'nt', 'nr']) }
+        if (!selected_options || invalid_options) {
+            error "Invalid --blast_options: ${params.blast_options}. Use viruses (or nt_viruses), nt, nr, all, or a comma-separated combination."
+        }
+        println "Selected BLAST options: ${selected_options}"
 
         // Execute relevant BLAST processes based on selected options
-        if ('viruses' in params.blast_options || 'all' in params.blast_options) {
+        if ('viruses' in selected_options || 'all' in selected_options) {
             println "Running BLASTN against the viruses database..."
-            blastn_viruses_channel = blastn_viruses(fasta_file)
+            blastn_viruses(fasta_file)
+            blastn_viruses_channel = blastn_viruses.out.formatted_blast_output
         }
 
-        if ('nt' in params.blast_options || 'all' in params.blast_options) {
+        if ('nt' in selected_options || 'all' in selected_options) {
             println "Running BLASTN against the NT database..."
-            blastn_channel = blastn(fasta_file)
+            blastn(fasta_file)
+            blastn_channel = blastn.out.formatted_blast_output
         }
 
-        if ('nr' in params.blast_options || 'all' in params.blast_options) {
+        if ('nr' in selected_options || 'all' in selected_options) {
             println "Running BLASTX against the NR database..."
-            blastx_channel = blastx(fasta_file)
+            blastx(fasta_file)
+            blastx_channel = blastx.out.formatted_blast_output
         }
 
     emit:
         // Emit results for each BLAST option
-        blastn_results_viruses = blastn_viruses_channel.formatted_blast_output
-        blastn_results_nt = blastn_channel.formatted_blast_output
-        blastx_results_nr = blastx_channel.formatted_blast_output
+        blastn_results_viruses = blastn_viruses_channel
+        blastn_results_nt = blastn_channel
+        blastx_results_nr = blastx_channel
 }
 

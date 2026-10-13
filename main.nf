@@ -59,11 +59,16 @@ def helpMSG() {
     --trimming_tool   Trimming tool to use: 'fastp', 'flexbar', or 'trim_galore' (default: 'fastp')
     --assembler       Assembler to use: 'megahit', 'metaspades', or 'hybrid' (default: 'hybrid')
     --kraken2_db      Path to Kraken2 database (required for taxonomic profiling)
-    --blastdb_viruses Path to BLAST viruses database
-    --blastdb_nt      Path to BLAST nt database
-    --blastdb_nr      Path to BLAST nr database
+    --blast_options   Databases: viruses (alias: nt_viruses), nt, nr, all, or comma-separated values (default: viruses)
+    --blastdb_viruses Path to BLAST nt_viruses database (used by default)
+    --blastdb_nt      Path to BLAST nt database (used when nt or all is selected)
+    --blastdb_nr      Path to BLAST nr database (used with blastx when nr or all is selected)
     --diamonddb       Path to DIAMOND protein database
-    --checkv_db       Path to CheckV database (required for viral genome completion)
+    --blastx_tool     Protein search tool: diamond or blastx (default: diamond)
+    --checkv_db       Path to CheckV database (required only with --run_checkv)
+    --run_checkv      Enable CheckV quality/completeness assessment (default: false; requires viral analysis)
+    --run_virfinder   Enable VirFinder classification (default: false; requires viral analysis)
+    --organize_contigs Enable contig organization using selected BLAST results (default: false)
     --min_contig_length Minimum contig length for assembly (default: 200)
     --quality         Quality threshold for trimming (default: 30)
     --profile         Nextflow profile to use (default: 'slurm')
@@ -75,9 +80,9 @@ def helpMSG() {
     --skip_assembly             Skip the assembly step
     --skip_blast_annotation     Skip the BLAST annotation step
     --skip_taxonomic_profiling  Skip the taxonomic profiling step (Kraken2)
-    --skip_viral_analysis       Skip the viral analysis step (CheckV & VirFinder)
+    --skip_viral_analysis       Skip any requested CheckV and VirFinder analysis
     --skip_coverage_analysis    Skip the coverage analysis step
-    --skip_contig_organization  Skip the contig organization step
+    --skip_contig_organization  Skip contig organization even when --organize_contigs is set
     --skip_visualization        Skip the visualization step
     --skip_final_report         Skip the final report generation
     --skip_report               Alias for --skip_final_report

@@ -45,10 +45,10 @@ The pipeline integrates state-of-the-art tools for:
 - **Quality control and preprocessing** of raw reads (FastQC, fastp, flexbar, trim_galore)
 - **Assembly** of metagenomic data (MEGAHIT, metaSPAdes, or hybrid)
 - **Taxonomic classification** with Kraken2 and visualization with Krona
-- **Viral genome completion and quality assessment** (CheckV)
-- **Viral sequence identification** (VirFinder with custom filtering)
-- **BLAST-based annotation** for both viral and bacterial contigs
-- **Automated organization of contigs** by taxonomy and family
+- **Optional viral genome completion and quality assessment** (CheckV)
+- **Optional viral sequence identification** (VirFinder with custom filtering)
+- **BLAST-based annotation** against `nt_viruses` by default, with NT and NR searches available on request
+- **Optional organization of contigs** by taxonomy and family
 - **Contig-level coverage analysis and visualization** for assembled contigs
 - **Comprehensive reporting** with coverage plots and an interactive HTML summary
 
@@ -83,13 +83,13 @@ graph TD
     subgraph "3. Downstream Analysis"
         F --> G[Krona Report];
         E --> H[QUAST Report];
-        E --> I[Viral Analysis: CheckV & VirFinder];
-        E --> J[BLAST Annotation: blastn / blastx];
+        E --> I[Optional Viral Analysis: CheckV / VirFinder];
+        E --> J[BLAST: nt_viruses default / NT and NR optional];
         E --> K[Coverage Analysis: Bowtie2];
     end
 
     subgraph "4. Organization & Final Report"
-        J --> L[Organize Contigs by Taxonomy];
+        J --> L[Optional: Organize Contigs by Taxonomy];
         K --> M[Coverage Plots];
         G & H & I & J & L & M --> N(Final HTML Report);
     end
@@ -117,7 +117,6 @@ nextflow run main.nf \
   --input <your_samplesheet>.csv \
   --outdir <output_directory> \
   --kraken2_db <path_to_your_kraken2_db> \
-  --checkv_db <path_to_your_checkv_db> \
   -profile conda
 
 # Run with singularity (recommended for HPC)
@@ -125,7 +124,6 @@ nextflow run main.nf \
   --input <your_samplesheet>.csv \
   --outdir <output_directory> \
   --kraken2_db <path_to_your_kraken2_db> \
-  --checkv_db <path_to_your_checkv_db> \
   -profile singularity,slurm
 ```
 
@@ -143,8 +141,8 @@ sample2,/path/to/sample2_R1.fastq.gz,/path/to/sample2_R2.fastq.gz
 - Multiple assembly options (MEGAHIT, metaSPAdes, or hybrid)
 - BLAST-based and Kraken2-based taxonomic annotation
 - **Flexible BLASTX tool choice** (DIAMOND or traditional BLASTX)
-- Automated organization of contigs by taxonomy and family
-- Viral genome completion (CheckV) and classification (VirFinder with custom filtering)
+- Optional organization of contigs by taxonomy and family (`--organize_contigs`)
+- Optional viral genome completion (CheckV with `--run_checkv`) and classification (VirFinder with `--run_virfinder`)
 - **Contig-level coverage analysis** and visualization
 - **Modern, Template-Based Final Report** with a clean and interactive design.
 - Structured, per-sample output organization
@@ -178,9 +176,9 @@ All dependencies can be installed using the provided `environment.yml` file or a
 - FastQC, fastp, flexbar, trim-galore
 - MEGAHIT, SPAdes, BLAST+, DIAMOND, Kraken2, QUAST
 - Bowtie2, Samtools, Bedtools
-- CheckV, VirFinder (R)
+- CheckV only when `--run_checkv` is enabled; VirFinder (R) only when `--run_virfinder` is enabled
 - Python: biopython, pandas, matplotlib, seaborn, ete3
-- R: r-base, r-virfinder
+- R: r-base, r-virfinder (required only for optional VirFinder analysis)
 
 ## Installation
 
@@ -235,7 +233,6 @@ For maximum reproducibility, especially on an HPC, it is recommended to use Dock
      --input <your_samplesheet>.csv \
      --outdir <output_dir> \
      --kraken2_db <path_to_kraken2_db> \
-     --checkv_db <path_to_checkv_db> \
      -profile singularity,slurm
    ```
    Nextflow will automatically pull the Docker image and convert it to a Singularity image.
@@ -251,16 +248,40 @@ All parameters can be set on the command line or in `nextflow.config`.
 | --trimming_tool     | Trimming tool: `fastp`, `flexbar`, `trim_galore`                  | `trim_galore`     |
 | --assembler         | Assembler: `megahit`, `metaspades`, `hybrid`                      | `hybrid`          |
 | --kraken2_db        | Path to Kraken2 database                                           | (required)        |
-| --blastdb_viruses   | Path to BLAST viruses database                                    | (optional)        |
-| --blastdb_nt        | Path to BLAST nt database                                         | (optional)        |
-| --blastdb_nr        | Path to BLAST nr database                                         | (optional)        |
+| --blast_options     | Search `viruses` (alias `nt_viruses`), `nt`, `nr`, `all`, or a comma-separated combination | `viruses` |
+| --blastdb_viruses   | Path to BLAST `nt_viruses` database (used by default)                | configured path   |
+| --blastdb_nt        | Path to BLAST NT database (required for `nt` or `all`)               | configured path   |
+| --blastdb_nr        | Path to BLAST NR database (required for `nr` or `all` with `--blastx_tool blastx`) | configured path |
 | --diamonddb         | Path to DIAMOND protein database                                  | (optional)        |
 | --blastx_tool       | BLASTX tool: `diamond`, `blastx` (DIAMOND is much faster)         | `diamond`         |
-| --checkv_db         | Path to CheckV database (for viral genome completion)             | (required)        |
+| --checkv_db         | Path to CheckV database (required only with `--run_checkv`)         | configured path   |
+| --run_checkv        | Enable CheckV quality/completeness assessment                      | `false`           |
+| --run_virfinder     | Enable VirFinder classification in the viral analysis step        | `false`           |
+| --organize_contigs  | Enable contig organization using selected BLAST results           | `false`           |
 | --min_contig_length | Minimum contig length for assembly                                | 200               |
 | --quality           | Quality threshold for trimming                                    | 30                |
 | --profile           | Nextflow profile (e.g., `local`, `slurm`, `conda`, `docker`)      | `slurm`           |
 | --help              | Show help message and exit                                        |                   |
+
+By default, BLAST searches only the database configured by `--blastdb_viruses`
+(`nt_viruses`). CheckV, VirFinder, and contig organization are disabled to reduce
+default computation. CheckV and VirFinder can be enabled independently.
+Enable these optional steps or search all databases with:
+
+```bash
+# Add these options to your usual run command as needed:
+nextflow run main.nf --input samplesheet.csv --run_checkv --checkv_db /path/to/checkv_db
+nextflow run main.nf --input samplesheet.csv --run_virfinder --organize_contigs
+nextflow run main.nf --input samplesheet.csv --blast_options all
+nextflow run main.nf --input samplesheet.csv --blast_options viruses,nt
+```
+
+`all` runs the viruses and NT nucleotide searches plus the NR protein search
+(DIAMOND by default, or BLASTX with `--blastx_tool blastx`). Lists such as
+`blast_options = ['viruses', 'nt']` are also supported in configuration files.
+`--skip_viral_analysis` overrides both `--run_checkv` and `--run_virfinder`, and
+`--skip_contig_organization` overrides `--organize_contigs`. Contig organization
+requires assembly and BLAST annotation results; it can use the default viruses-only results.
 
 ## Resource Management on SLURM
 
@@ -292,12 +313,12 @@ Any process without a label receives a minimal default of 2 CPUs, 8 GB of RAM, a
    - MEGAHIT, metaSPAdes, or hybrid assembly
    - QUAST quality assessment
 5. **BLAST Annotation**
-   - Taxonomic annotation of contigs against multiple databases (NT, NR, viruses)
-6. **Viral Analysis**
-   - CheckV genome completion
-   - VirFinder classification with custom filtering
-7. **Contig Organization**
-   - Organize contigs by taxonomy and family using NT database results
+   - Taxonomic annotation against `nt_viruses` by default; NT and NR enabled through `--blast_options`
+6. **Viral Analysis (Optional)**
+   - Optional CheckV quality/completeness assessment (`--run_checkv`)
+   - Optional VirFinder classification with custom filtering (`--run_virfinder`)
+7. **Contig Organization (Optional)**
+   - Organize contigs by taxonomy and family using selected BLAST results (`--organize_contigs`)
 8. **Coverage Analysis**
    - Contig-level coverage calculation and statistics
    - Enhanced coverage plots with intelligent x-axis labeling
@@ -315,9 +336,9 @@ results/
 ├── blast_results/        # BLAST annotation results
 ├── kraken2_results/      # Kraken2 classification results
 ├── krona_results/        # Krona HTML visualizations
-├── organized_contigs/    # Organized contigs by taxonomy
-├── checkv/               # CheckV viral genome completion
-├── virfinder/            # VirFinder results (full and filtered)
+├── organized_contigs/    # Organized contigs by taxonomy (when enabled)
+├── checkv/               # CheckV quality/completeness assessment (when enabled)
+├── virfinder/            # VirFinder results (when enabled)
 ├── coverage/             # BAM files and contig-level coverage stats
 ├── coverage_plots/       # Coverage plots (PNG)
 ├── final_report/         # Comprehensive HTML report (final step)
