@@ -4,7 +4,7 @@ process quast {
     tag "$meta.id"
     label 'low'
 
-    publishDir "${params.outdir}/assembly_stats", mode: 'copy'
+    publishDir "${params.outdir}/assembly_stats", mode: params.publish_mode, overwrite: true, failOnError: true
 
     input:
         tuple val(meta), path(contigs)

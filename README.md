@@ -245,9 +245,12 @@ All parameters can be set on the command line or in `nextflow.config`.
 |---------------------|--------------------------------------------------------------------|-------------------|
 | --input             | Path to input samplesheet (CSV)                                    | (required)        |
 | --outdir            | Output directory                                                   | ./results         |
+| --publish_mode      | Publish using `link` (hard links), `copy`, `symlink`, or `rellink` | `copy` |
+| --blast_max_target_seqs | Maximum reported subjects per query; all reported HSPs are retained | 50 |
+| --taxonomy_db       | Existing local ETE NCBI taxonomy SQLite database | `~/.etetoolkit/taxa.sqlite` |
 | --adapters          | Path to adapters file (for trimming)                              | (provided)        |
 | --trimming_tool     | Trimming tool: `fastp`, `flexbar`, `trim_galore`                  | `trim_galore`     |
-| --assembler         | Assembler: `megahit`, `metaspades`, `hybrid`                      | `hybrid`          |
+| --assembler         | Assembler: `megahit`, `metaspades`, `hybrid`                      | `megahit`         |
 | --kraken2_db        | Path to Kraken2 database                                           | (required)        |
 | --blast_options     | Search `viruses` (alias `nt_viruses`), `nt`, `nr`, `all`, or a comma-separated combination | `viruses` |
 | --blastdb_viruses   | Path to BLAST `nt_viruses` database (used by default)                | configured path   |
@@ -284,6 +287,135 @@ nextflow run main.nf --input samplesheet.csv --blast_options viruses,nt
 `--skip_viral_analysis` overrides both `--run_checkv` and `--run_virfinder`, and
 `--skip_contig_organization` overrides `--organize_contigs`. Contig organization
 requires assembly and BLAST annotation results; it can use the default viruses-only results.
+
+## Storage and debugging
+
+MEGAHIT is the default assembler. `--assembler metaspades` and `--assembler hybrid`
+remain available. Hybrid runs both assemblers and retains both sets of output.
+
+All declared results are published as **independent copies** by default
+(`--publish_mode copy`), following the defaults used by
+[nf-core/rnaseq](https://github.com/nf-core/rnaseq/blob/master/nextflow.config) and
+[nf-core/viralrecon](https://github.com/nf-core/viralrecon/blob/master/nextflow.config).
+You can transfer or archive the results without retaining the task work files.
+This includes trimmed reads, raw BLAST tables, reports, BAM/index files, and full
+assembler output directories, including intermediate contigs and logs.
+Nextflow's command scripts and execution logs remain under `work/` for debugging.
+
+Raw input reads are explicitly staged with `stageInMode = 'symlink'`; they are
+not copied into every task directory. Trimmed reads are newly generated data and
+are retained, with downstream tasks linking to them. Copy publishing temporarily
+uses space in both work and results. Keep work files while debugging or using
+`-resume`; recover that space with explicit cleanup after validating the results.
+
+### Explicit cleanup after validation
+
+First verify that your published results are complete and that you no longer
+need to resume the affected tasks. Run `nextflow log` in the original launch
+directory to identify the successful run. The helper below requires an explicit
+run name (or session ID), checks the run finished successfully, and rejects an
+empty, symlinked, or overlapping results directory. These checks do not establish
+that every scientific output you intended to retain has been published.
+
+```bash
+# Preview only. --launch-dir is the original directory containing .nextflow/.
+python scripts/cleanup_work.py --run RUN_NAME \
+  --launch-dir /path/to/launch_directory --results /path/to/results
+
+# After reviewing the preview and validating results, apply the same cleanup.
+python scripts/cleanup_work.py --run RUN_NAME \
+  --launch-dir /path/to/launch_directory --results /path/to/results --apply
+```
+
+The helper uses `nextflow clean RUN_NAME -keep-logs` with `-dry-run` by default;
+`--apply` selects `-force`. It retains task execution logs and metadata while
+removing cached task data. Published copies remain available, but cleaned tasks
+cannot resume. See the [Nextflow cleanup reference](https://docs.seqera.io/nextflow/reference/cli/clean).
+There is no automatic cleanup on success or failure, and failed runs are refused
+by the helper so their work files remain available for investigation.
+
+### Optional publishing modes
+
+`--publish_mode link` creates hard links, sharing stored data between work and
+results on the same filesystem. This mode requires filesystem hard-link support;
+the entry point tests support before analysis. Hard links are regular file names,
+not symbolic pointers: ordinary copying transfers their contents, and removing
+the work name leaves the published file available. Treat hard-linked results as
+read-only, since in-place edits also change the cached work file.
+
+`--publish_mode symlink` or `rellink` creates symbolic links. These depend on the
+work files remaining available, so the cleanup helper refuses symlinked results.
+Do not use these modes for independent portable results. A publication failure
+stops the run rather than silently switching publishing modes.
+
+Task failures terminate the run after the configured retries, rather than silently
+ignoring a missing result. There is no automatic work cleanup. Temporary unsorted BAM output is avoided by
+streaming mapping directly into sorting; the sorted BAM, BAI, Bowtie2 index,
+mapping log, and index statistics are published. Coverage statistics use a single
+depth pass and divide by full contig length, including uncovered positions.
+
+## BLAST alignment evidence
+
+Annotation no longer reduces the evidence to one alignment per contig. Each
+selected database produces the following files under `blast_results/`:
+
+- `<sample>_<database>.txt`: the unmodified raw tabular search output.
+- `<sample>_hits_<database>.tsv`: every reported HSP, with original coordinates,
+  scores, taxonomy, database label, and sequence length. This is the primary
+  downstream annotation input. Full contig sequences remain in the assembly FASTA
+  rather than being repeated in every HSP row.
+- `<sample>_hit_summary_<database>.tsv`: one row per query/subject pair, recording
+  HSP count, merged query intervals, covered query bases, and query union coverage.
+  Overlaps are counted once; gaps between intervals remain uncovered.
+- `<sample>_best_hits_<database>.xls`: a compatibility **tab-separated text**
+  report with one representative HSP per query, ranked by bit score, then E-value
+  and alignment length. It is not a binary Excel file or the complete evidence.
+
+Coordinates are **1-based, inclusive**. Query union coverage describes the union
+of alignment coordinate spans, not read coverage or genome completeness. For
+BLASTX/DIAMOND, query coordinates and query lengths are nucleotides while
+`alignment_length` is amino acids. Protein searches report `qframe`, stored as
+`query_frame` with a derived `query_strand`; `subject_strand` is left blank.
+All new searches report `qcovhsp` in `query_coverage`, labeled explicitly in
+`query_coverage_type`. When using the parser on legacy raw files, its default
+coverage-column interpretation remains `qcovs`.
+
+Searches retain up to `--blast_max_target_seqs 50` subjects by default instead of
+five. BLAST retains all HSPs it reports; DIAMOND explicitly uses `--max-hsps 0`
+to retain alternative HSPs. DIAMOND can take longer with this setting. These
+settings do not guarantee every possible local match is found: tool thresholds,
+search heuristics, and the subject cap still apply. No whole-contig coverage
+filter is imposed, so a localized hit is not discarded merely because the rest
+of a contig matches elsewhere.
+
+Taxonomy uses one local ETE database connection with cached lookups. Provide
+`--taxonomy_db /path/to/taxa.sqlite` to select an existing database; the pipeline
+does not download or update it during annotation. Multi-taxid subjects use their
+lowest common lineage rather than combining ranks from unrelated taxa.
+
+When `--organize_contigs` is enabled, all HSPs from the selected databases feed
+organization. Contigs with conflicting taxonomy through family rank, or
+unresolved taxids among otherwise classified hits, go to `needs_review/` with
+`classification_review.tsv`. Every HSP is retained in
+`classification_evidence.tsv`. Conflicts can reflect ambiguous homology, shared
+genes, or possible assembly chimeras; they are not a confirmed chimera call.
+Contigs are not split automatically. Unmatched contigs remain in `unclassified/`.
+
+Search/publishing options follow the [NCBI BLAST manual](https://www.ncbi.nlm.nih.gov/books/NBK279684/),
+[DIAMOND documentation](https://github.com/bbuchfink/diamond/wiki/3.-Command-line-options),
+and [Nextflow publication documentation](https://docs.seqera.io/nextflow/reference/process/directives/publish-dir).
+
+## Local regression checks
+
+```bash
+conda run -n ngs python -m unittest discover -s tests -v
+conda run -n ngs python tests/smoke_nextflow.py
+```
+
+The smoke test creates tiny synthetic references, reads, and a synthetic taxonomy
+under a temporary directory. It exercises real MEGAHIT, BLASTN, BLASTX, DIAMOND,
+Nextflow publication/resume, and SAMtools coverage. It checks independent copied results, optional hard links, read symlinks,
+results transfer, and explicit log-preserving cleanup. It does not submit HPC jobs or establish production sensitivity.
 
 ## Resource Management on SLURM
 
@@ -341,7 +473,9 @@ Any process without a label receives a minimal default of 2 CPUs, 8 GB of RAM, a
 results/
 ├── fastp/                # Trimmed reads and fastp reports
 ├── fastqc/               # Raw and trimmed read QC reports
-├── assembly/             # Assembly results
+├── megahit_assembly/     # MEGAHIT output, including intermediates (default assembler)
+├── metaspades_assembly/  # metaSPAdes output when selected
+├── hybrid_assembly/      # Merged/clustered output when hybrid is selected
 ├── assembly_stats/       # Assembly quality assessment (QUAST)
 ├── blast_results/        # BLAST annotation results
 ├── kraken2_results/      # Kraken2 classification results
@@ -368,7 +502,7 @@ results/
 - `virfinder_filtered_*.txt`: High-confidence viral contigs (score ≥ 0.9, p-value ≤ 0.05)
 
 ### Coverage Analysis
-- `coverage_*.txt`: Contig-level coverage statistics.
+- `coverage_*.txt`: Whole-contig mean depth, mapped read segments (`Total_Reads`), covered bases, and percentage coverage breadth (`Coverage_Breadth`).
 - `coverage_plot_*.png`: Bar plots showing coverage distribution across contigs.
 
 ## Configuration

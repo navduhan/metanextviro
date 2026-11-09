@@ -3,12 +3,13 @@ process hybrid {
 
     label 'medium'  // Assign a label for resource management
 
-    publishDir "${params.outdir}", mode: 'copy', overwrite: true  // Define output directory
+    publishDir "${params.outdir}", mode: params.publish_mode, overwrite: true, failOnError: true, pattern: 'hybrid_assembly/*'  // Define output directory
 
     input:
         tuple val(id), path(megahit_contigs), path(metaspades_contigs)  // Input: Sample ID and contig files from MEGAHIT and metaSPAdes
 
     output:
+        tuple val(id), path("hybrid_assembly/${id}"), emit: all_assembly_files
         tuple val(id), path("hybrid_assembly/${id}/${id}_metanextviro_hybrid_contigs.fa"), emit: contigs
         tuple val(id), path("hybrid_assembly/${id}/${id}_merged.fasta"), emit: merged
         tuple val(id), path("hybrid_assembly/${id}/${id}_merged_cdhit.fasta"), emit: cdhit

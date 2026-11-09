@@ -5,12 +5,13 @@ process metaspades {
 
     label 'vhigh'  // Assign a label for resource management
 
-    publishDir "${params.outdir}", mode: 'copy', overwrite: true  // Define output directory
+    publishDir "${params.outdir}", mode: params.publish_mode, overwrite: true, failOnError: true, pattern: 'metaspades_assembly/*'  // Define output directory
 
     input:
         tuple val(id), path(reads1), path(reads2)  // Input: Sample ID and reads (paired or single)
 
     output:
+        tuple val(id), path("metaspades_assembly/${id}"), emit: all_assembly_files
         tuple val(id), path("metaspades_assembly/${id}/${id}_metanextviro_metaspades_contigs.fa"), emit: contigs
         tuple val(id), path("metaspades_assembly/${id}/spades.log"), emit: log
         tuple val(id), path("metaspades_assembly/${id}/params.txt"), emit: params

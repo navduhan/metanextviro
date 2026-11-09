@@ -5,7 +5,7 @@ process kraken2 {
 
     label 'high'  // Assign a label for resource management
 
-    publishDir "${params.outdir}/kraken2_results", mode: 'copy', overwrite: true  // Define and manage the output directory
+    publishDir "${params.outdir}/kraken2_results", mode: params.publish_mode, overwrite: true, failOnError: true  // Define and manage the output directory
 
     input:
         tuple val(id), path(reads1), path(reads2)  // Input: Sample ID and reads (paired-end or single-end)

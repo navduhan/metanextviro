@@ -1,7 +1,7 @@
 // Comparative heatmap visualization
 process heatmap {
     label 'process_medium'
-    publishDir "${params.outdir}/heatmaps", mode: 'copy', overwrite: true
+    publishDir "${params.outdir}/heatmaps", mode: params.publish_mode, overwrite: true, failOnError: true
 
     input:
         path matrix

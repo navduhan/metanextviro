@@ -4,15 +4,19 @@ process blastn_viruses {
     tag "$id"  // Tag the task with the query ID for traceability
     label 'medium'  // Assign a label for resource management
 
-    publishDir "${params.outdir}/blast_results", mode: 'copy', overwrite: true  // Define output directory and handling
+    publishDir "${params.outdir}/blast_results", mode: params.publish_mode, overwrite: true, failOnError: true  // Define output directory and handling
 
     input:
         tuple val(id), path(fasta_file)  // Input: Sample ID and FASTA file
 
     output:
-        tuple val(id), path("${id}_best_hits_viruses.xls"), emit: formatted_blast_output  // Emit processed BLAST results in Excel format
+        tuple val(id), path("${id}_hits_viruses.tsv"), emit: formatted_blast_output
+        tuple val(id), path("${id}_hit_summary_viruses.tsv"), emit: hit_summary
+        tuple val(id), path("${id}_best_hits_viruses.xls"), emit: best_hit_summary
+        tuple val(id), path("${id}_viruses.txt"), emit: raw_blast_output
 
     script:
+    def taxonomyArg = params.taxonomy_db ? "--taxonomy_db '" + file(params.taxonomy_db).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
     """
     # Log the start of the BLAST process
     echo " Starting BLAST search for viruses for sample: $id"
@@ -24,8 +28,8 @@ process blastn_viruses {
         -query ${fasta_file} \
         -db ${params.blastdb_viruses} \
         -out ${id}_viruses.txt \
-        -num_alignments 5 \
-        -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovs evalue bitscore qlen slen stitle staxids sstrand' \
+        -max_target_seqs ${params.blast_max_target_seqs} \
+        -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovhsp evalue bitscore qlen slen stitle staxids sstrand' \
         -num_threads ${task.cpus}
 
     # Verify BLAST output
@@ -42,7 +46,8 @@ process blastn_viruses {
         -b ${id}_viruses.txt \
         -f ${fasta_file} \
         -p ${id} \
-        -s viruses
+        -s viruses \
+        --query_coverage_type qcovhsp ${taxonomyArg}
 
     # Verify processed output
     if [ ! -f "${id}_best_hits_viruses.xls" ]; then

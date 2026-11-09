@@ -6,7 +6,7 @@ process krona {
 
     label 'low'  // Assign a label for resource management
 
-    publishDir "${params.outdir}/krona_results", mode: 'copy', overwrite: true  // Define output directory
+    publishDir "${params.outdir}/krona_results", mode: params.publish_mode, overwrite: true, failOnError: true  // Define output directory
 
     input:
         tuple val(id), path(kraken_report)  // Input: Kraken2 report file

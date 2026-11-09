@@ -4,7 +4,7 @@ process ORGANIZE_CONTIGS {
     tag "$id"
     label 'low'
 
-    publishDir "${params.outdir}/organized_contigs", mode: 'copy'
+    publishDir "${params.outdir}/organized_contigs", mode: params.publish_mode, overwrite: true, failOnError: true, pattern: '*'
 
     input:
         tuple val(id), path(blast_results), path(contigs)

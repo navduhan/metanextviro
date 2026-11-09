@@ -15,13 +15,20 @@ workflow {
         exit 0
     }
 
+    if (!(params.publish_mode in ['link', 'copy', 'symlink', 'rellink'])) {
+        error 'Invalid --publish_mode. Use link, copy, symlink, or rellink.'
+    }
+    if (!(params.blast_max_target_seqs.toString() ==~ /[1-9][0-9]*/)) {
+        error '--blast_max_target_seqs must be a positive integer.'
+    }
+
     // Validate mandatory input parameters
     if (!params.input) {
         error 'Error: Input samplesheet not specified! Use --input <samplesheet> to provide input.'
     }
 
         // Check if input files exist
-    def checkPathParamList = [ params.input, params.adapters ]
+    def checkPathParamList = [ params.input, params.adapters, params.taxonomy_db ]
     checkPathParamList.each { param -> 
         if (param) { 
             file(param, checkIfExists: true) 
@@ -35,11 +42,36 @@ workflow {
         exit 1, 'Input samplesheet not specified!' 
     }
 
-    // Run the Nextreo sub-workflow
+    // Check actual hard-link support before starting expensive analysis tasks.
+    if (params.publish_mode == 'link') {
+        validateHardLinks(file(params.outdir), workflow.workDir)
+    }
+
+    // Run the MetaNextViro sub-workflow
     metanextviro(ch_input)
 }
 
 // Helper functions
+def validateHardLinks(outputDir, workDir) {
+    def source = null
+    def destination = null
+    try {
+        java.nio.file.Files.createDirectories(outputDir)
+        java.nio.file.Files.createDirectories(workDir)
+        source = java.nio.file.Files.createTempFile(workDir, '.metanextviro-link-check-', '.tmp')
+        destination = outputDir.resolve(source.fileName)
+        java.nio.file.Files.createLink(destination, source)
+    } catch (Exception exception) {
+        if (source != null) {
+            java.nio.file.Files.deleteIfExists(source)
+        }
+        error "Cannot hard-link work files into results: ${exception.message}. " +
+            'Use work and results on the same filesystem, or select --publish_mode copy/symlink.'
+    }
+    java.nio.file.Files.deleteIfExists(destination)
+    java.nio.file.Files.deleteIfExists(source)
+}
+
 def helpMSG() {
     println """
     ______________________________________________________________________________________________________________________________________________
@@ -54,16 +86,19 @@ def helpMSG() {
 
     Options:
     --input           Path to the input samplesheet (mandatory)
+    --publish_mode    Output publishing: copy (default), link (same filesystem), symlink, rellink
+    --blast_max_target_seqs Maximum subject sequences reported per query (default: 50)
     --outdir          Directory for output files (default: './results')
     --adapters        Path to the adapters file (optional, for trimming)
-    --trimming_tool   Trimming tool to use: 'fastp', 'flexbar', or 'trim_galore' (default: 'fastp')
-    --assembler       Assembler to use: 'megahit', 'metaspades', or 'hybrid' (default: 'hybrid')
+    --trimming_tool   Trimming tool to use: 'fastp', 'flexbar', or 'trim_galore' (default: 'trim_galore')
+    --assembler       Assembler to use: 'megahit', 'metaspades', or 'hybrid' (default: 'megahit')
     --kraken2_db      Path to Kraken2 database (required for taxonomic profiling)
     --blast_options   Databases: viruses (alias: nt_viruses), nt, nr, all, or comma-separated values (default: viruses)
     --blastdb_viruses Path to BLAST nt_viruses database (used by default)
     --blastdb_nt      Path to BLAST nt database (used when nt or all is selected)
     --blastdb_nr      Path to BLAST nr database (used with blastx when nr or all is selected)
     --diamonddb       Path to DIAMOND protein database
+    --taxonomy_db     Existing local ETE taxonomy SQLite database (default: ~/.etetoolkit/taxa.sqlite)
     --blastx_tool     Protein search tool: diamond or blastx (default: diamond)
     --checkv_db       Path to CheckV database (required only with --run_checkv)
     --run_checkv      Enable CheckV quality/completeness assessment (default: false; requires viral analysis)

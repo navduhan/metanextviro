@@ -1,7 +1,7 @@
 // Comprehensive interactive HTML report
 process html_report {
     label 'process_medium'
-    publishDir "${params.outdir}/final_report", mode: 'copy', overwrite: true
+    publishDir "${params.outdir}/final_report", mode: params.publish_mode, overwrite: true, failOnError: true
 
     input:
         path kraken2_reports

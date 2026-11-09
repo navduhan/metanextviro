@@ -5,12 +5,13 @@ process megahit {
 
     label 'high'  // Assign a label for resource management
 
-    publishDir "${params.outdir}", mode: 'copy', overwrite: true  // Define output directory
+    publishDir "${params.outdir}", mode: params.publish_mode, overwrite: true, failOnError: true, pattern: 'megahit_assembly/*'  // Define output directory
 
     input:
         tuple val(id), path(reads1), path(reads2)  // Input: Sample ID and reads (paired or single)
 
     output:
+        tuple val(id), path("megahit_assembly/${id}"), emit: all_assembly_files
         tuple val(id), path("megahit_assembly/${id}/${id}_metanextviro_megahit_contigs.fa"), emit: contigs
         tuple val(id), path("megahit_assembly/${id}/log"), emit: log
         tuple val(id), path("megahit_assembly/${id}/params.json"), emit: params

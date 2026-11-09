@@ -5,7 +5,7 @@ process fastqc {
     label 'low'
 
     // Use publishDir to save outputs in a specific directory
-    publishDir "${params.outdir}", mode: 'copy', overwrite: true
+    publishDir "${params.outdir}", mode: params.publish_mode, overwrite: true, failOnError: true
 
     input:
     tuple val(id), path(reads1), path(reads2)  // Input: Sample ID and read file paths (paired-end or single-end)

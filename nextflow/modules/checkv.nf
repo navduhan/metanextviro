@@ -3,7 +3,7 @@ process checkv {
     tag "$id"
     label 'medium'
 
-    publishDir "${params.outdir}/checkv", mode: 'copy', overwrite: true
+    publishDir "${params.outdir}/checkv", mode: params.publish_mode, overwrite: true, failOnError: true
 
     input:
         tuple val(id), path(contigs)

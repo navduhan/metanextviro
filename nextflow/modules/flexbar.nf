@@ -4,7 +4,7 @@ process flexbar {
     tag "$id"  // Tagging process with sample ID for traceability
     label 'low'
 
-    publishDir "${params.outdir}", mode: 'copy', overwrite: true
+    publishDir "${params.outdir}", mode: params.publish_mode, overwrite: true, failOnError: true
 
     input:
         tuple val(id), path(reads1), path(reads2)  // Input: Sample ID and reads (paired-end or single-end)
@@ -34,7 +34,7 @@ process flexbar {
                 -qt ${params.quality} \
                 -n ${task.cpus} \
                 -z GZ \
-                -a ${params.adapters}
+                -a ${params.adapters} > trimmed_reads/${id}_trimmed.log 2>&1
     else
         echo " Running Flexbar in single-end mode..."
         flexbar -r $reads1 \
@@ -42,7 +42,7 @@ process flexbar {
                 -qt ${params.quality} \
                 -n ${task.cpus} \
                 -z GZ \
-                -a ${params.adapters}
+                -a ${params.adapters} > trimmed_reads/${id}_trimmed.log 2>&1
     fi
 
     # Verify output files

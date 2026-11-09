@@ -3,7 +3,7 @@ process coverage_plot {
     tag "$id"
     label 'low'
 
-    publishDir "${params.outdir}/coverage_plots", mode: 'copy', overwrite: true
+    publishDir "${params.outdir}/coverage_plots", mode: params.publish_mode, overwrite: true, failOnError: true
 
     input:
         tuple val(id), path(coverage_stats)

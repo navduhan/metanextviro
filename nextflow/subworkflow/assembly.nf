@@ -23,7 +23,7 @@ workflow ASSEMBLY {
             }
             quast(quast_ch)
             
-            contigs = megahit.out.contigs
+            ch_contigs = megahit.out.contigs
             stats = quast.out.report
 
         } else if (params.assembler == "metaspades") {
@@ -36,7 +36,7 @@ workflow ASSEMBLY {
             }
             quast(quast_ch)
             
-            contigs = metaspades.out.contigs
+            ch_contigs = metaspades.out.contigs
             stats = quast.out.report
 
         } else if (params.assembler == "hybrid") {
@@ -51,7 +51,7 @@ workflow ASSEMBLY {
             }
             quast(quast_ch)
             
-            contigs = hybrid.out.contigs
+            ch_contigs = hybrid.out.contigs
             stats = quast.out.report
 
         } else {
@@ -60,12 +60,7 @@ workflow ASSEMBLY {
         }
 
     emit:
-        // Emit the appropriate contigs based on the selected assembler
-        contigs = 
-            params.assembler == "megahit"   ? megahit.out.contigs :
-            params.assembler == "metaspades" ? metaspades.out.contigs :
-            params.assembler == "hybrid"    ? hybrid.out.contigs :
-            null  // Should not be reached due to earlier validation
+        contigs = ch_contigs
         assembly_stats = stats
         megahit_logs = params.assembler == "megahit" || params.assembler == "hybrid" ? megahit.out.log : null
         megahit_params = params.assembler == "megahit" || params.assembler == "hybrid" ? megahit.out.params : null

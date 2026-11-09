@@ -4,15 +4,19 @@ process blastx {
     tag "$id"  // Tag the task with the query ID for traceability
     label 'high'  // Assign a label for resource management
 
-    publishDir "${params.outdir}/blast_results", mode: 'copy', overwrite: true  // Define output directory and handling
+    publishDir "${params.outdir}/blast_results", mode: params.publish_mode, overwrite: true, failOnError: true  // Define output directory and handling
 
     input:
         tuple val(id), path(fasta_file)  // Input: Sample ID and FASTA file
 
     output:
-        tuple val(id), path("${id}_best_hits_nr.xls"), emit: formatted_blast_output  // Emit processed BLAST results in Excel format
+        tuple val(id), path("${id}_hits_nr.tsv"), emit: formatted_blast_output
+        tuple val(id), path("${id}_hit_summary_nr.tsv"), emit: hit_summary
+        tuple val(id), path("${id}_best_hits_nr.xls"), emit: best_hit_summary
+        tuple val(id), path("${id}_nr.txt"), emit: raw_blast_output
 
     script:
+    def taxonomyArg = params.taxonomy_db ? "--taxonomy_db '" + file(params.taxonomy_db).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
     """
     # Log the start of the BLASTX process
     echo " Starting \$(echo ${params.blastx_tool} | tr '[:lower:]' '[:upper:]') search for NR database for sample: $id"
@@ -31,8 +35,9 @@ process blastx {
             --query ${fasta_file} \
             --db ${params.diamonddb} \
             --out ${id}_nr.txt \
-            --max-target-seqs 5 \
-            --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovhsp evalue bitscore qlen slen stitle staxids qstrand \
+            --max-target-seqs ${params.blast_max_target_seqs} \
+            --max-hsps 0 \
+            --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovhsp evalue bitscore qlen slen stitle staxids qframe \
             --threads ${task.cpus} \
             --sensitive
     else
@@ -41,8 +46,8 @@ process blastx {
             -query ${fasta_file} \
             -db ${params.blastdb_nr} \
             -out ${id}_nr.txt \
-            -num_alignments 5 \
-            -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovs evalue bitscore qlen slen stitle staxids qstrand' \
+            -max_target_seqs ${params.blast_max_target_seqs} \
+            -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovhsp evalue bitscore qlen slen stitle staxids qframe' \
             -num_threads ${task.cpus}
     fi
 
@@ -55,15 +60,13 @@ process blastx {
     # Log the processing step
     echo " Processing \$(echo ${params.blastx_tool} | tr '[:lower:]' '[:upper:]') results for sample: $id"
 
-    # Create a directory for processed results
-    mkdir -p ${id}_processed_results
-
     # Run Python script to process the BLASTX results
     python3 ${workflow.projectDir}/nextflow/bin/process_blast_results.py \
         -b ${id}_nr.txt \
         -f ${fasta_file} \
         -p ${id} \
-        -s nr
+        -s nr \
+        --query_coverage_type qcovhsp --strand_field qframe ${taxonomyArg}
 
     # Verify processed output
     if [ ! -f "${id}_best_hits_nr.xls" ]; then

@@ -3,7 +3,7 @@ process virfinder {
     tag "$id"
     label 'low'
 
-    publishDir "${params.outdir}/virfinder", mode: 'copy', overwrite: true
+    publishDir "${params.outdir}/virfinder", mode: params.publish_mode, overwrite: true, failOnError: true
 
     input:
         tuple val(id), path(contigs)

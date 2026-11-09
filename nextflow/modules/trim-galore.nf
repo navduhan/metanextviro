@@ -4,7 +4,7 @@ process trim_galore {
     tag "$id"  // Tagging process with sample ID for traceability
     label 'low'
 
-    publishDir "${params.outdir}", mode: 'copy', overwrite: true
+    publishDir "${params.outdir}", mode: params.publish_mode, overwrite: true, failOnError: true
 
     input:
         tuple val(id), path(reads1), path(reads2)  // Input: Sample ID and reads (paired-end or single-end)
@@ -12,7 +12,7 @@ process trim_galore {
     output:
         tuple val(id), path("trimmed_reads/${id}_val_1.fq.gz"), emit: clean_reads1
         tuple val(id), path("trimmed_reads/${id}_val_2.fq.gz"), emit: clean_reads2
-        tuple val(id), path("trimmed_reads/${reads1}_trimming_report.txt"), emit: clean_log
+        tuple val(id), path("trimmed_reads/*_trimming_report.txt"), emit: clean_log
 
     script:
     """

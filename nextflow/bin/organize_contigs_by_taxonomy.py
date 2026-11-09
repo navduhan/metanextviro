@@ -4,7 +4,6 @@ import argparse
 import pandas as pd
 from Bio import SeqIO
 from pathlib import Path
-import shutil
 import os
 
 def create_directory_structure(output_dir, sample_id):
@@ -71,7 +70,7 @@ def organize_contigs(blast_results_list, fasta_file, output_dir, sample_id):
     for br in blast_results_list:
         if os.path.exists(br) and os.path.getsize(br) > 0:
             try:
-                tdf = pd.read_csv(br, sep='\t')
+                tdf = pd.read_csv(br, sep='\t', dtype={'query_id': str, 'subject_id': str})
                 if not tdf.empty:
                     dfs.append(tdf)
             except Exception as e:
@@ -82,8 +81,9 @@ def organize_contigs(blast_results_list, fasta_file, output_dir, sample_id):
         # Just copy all contigs to unclassified
         unclass_dir = base_dir / "unclassified"
         unclass_dir.mkdir(exist_ok=True)
-        for record in SeqIO.parse(fasta_file, 'fasta'):
-            write_fasta(record, unclass_dir / f"{record.id}.fasta")
+        with open(fasta_file) as fasta_handle:
+            for record in SeqIO.parse(fasta_handle, 'fasta'):
+                write_fasta(record, unclass_dir / f"{record.id}.fasta")
         
         with open(base_dir / "classification_summary.txt", 'w') as f:
             f.write(f"Classification Summary for {sample_id}\n")
@@ -96,83 +96,102 @@ def organize_contigs(blast_results_list, fasta_file, output_dir, sample_id):
     # Normalize column names (strip whitespace, lower-case for robust matching)
     df.columns = [col.strip().lower() for col in df.columns]
     
-    # If multiple hits for same contig across files, pick the one with highest bit_score
+    # Preserve every local alignment, including conflicting regions/databases.
+    df.to_csv(base_dir / "classification_evidence.tsv", sep='\t', index=False)
     if 'bit_score' in df.columns:
+        df['bit_score'] = pd.to_numeric(df['bit_score'], errors='raise')
         df = df.sort_values(by=['query_id', 'bit_score'], ascending=[True, False])
-    
-    df = df.groupby('query_id').first().reset_index()
-    
-    # Create a dictionary to store contig classifications with full taxonomy
+
     contig_info = {}
-    for _, row in df.iterrows():
-        contig_id = row['query_id']
-        superkingdom = str(row.get('superkingdom', '')).strip().lower()
-        phylum = str(row.get('phylum', '')).strip().replace(' ', '_')
-        class_taxon = str(row.get('class', '')).strip().replace(' ', '_')
-        order = str(row.get('order', '')).strip().replace(' ', '_')
-        family = str(row.get('family', '')).strip().replace(' ', '_')
-        genus = str(row.get('genus', '')).strip().replace(' ', '_')
-        species = str(row.get('species', '')).strip().replace(' ', '_')
-        subject_title = str(row.get('subject_title', '')).strip().replace(' ', '_')
-        
-        # Handle missing or NaN values
-        def safe_val(val, fallback='Unknown'):
-            return fallback if val in ['', 'nan', 'None', 'NA', 'N/A'] else val
-        
-        if superkingdom in ['viruses', 'bacteria']:
-            contig_info[contig_id] = {
-                'type': superkingdom,
-                'superkingdom': safe_val(superkingdom, 'Unknown'),
-                'phylum': safe_val(phylum),
-                'class': safe_val(class_taxon),
-                'order': safe_val(order),
-                'family': safe_val(family, 'unclassified'),
-                'genus': safe_val(genus),
-                'species': safe_val(species),
-                'subject_title': safe_val(subject_title)
-            }
-    
+    review_reasons = {}
+    ranks = ['superkingdom', 'kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species']
+
+    def is_known(value):
+        return pd.notna(value) and str(value).strip().lower() not in [
+            '', 'nan', 'none', 'na', 'n/a', 'unknown']
+
+    def known_values(group, rank):
+        if rank not in group:
+            return set()
+        return {str(value).strip() for value in group[rank] if is_known(value)}
+
+    for contig_id, group in df.groupby('query_id', sort=False):
+        values = {rank: known_values(group, rank) for rank in ranks}
+        # Conflicts can represent ambiguity, shared genes, or an assembly chimera.
+        # Never infer a confirmed chimera or split sequence automatically.
+        conflicts = [rank for rank in ranks[:6] if len(values[rank]) > 1]
+        if conflicts:
+            review_reasons[contig_id] = 'conflicting_taxonomy:' + ','.join(conflicts)
+            continue
+        superkingdom = next(iter(values['superkingdom']), '').lower()
+        if superkingdom not in ['viruses', 'bacteria']:
+            continue
+        if 'taxonomy_status' in group and group['taxonomy_status'].isin(
+                ['invalid_taxid', 'missing_taxid', 'unresolved_taxid']).any():
+            review_reasons[contig_id] = 'unresolved_taxonomy_among_hits'
+            continue
+        info = {'type': superkingdom}
+        for rank in ranks:
+            # Do not borrow a species/genus from one alternative hit.
+            all_known = rank in group and all(is_known(value) for value in group[rank])
+            value = next(iter(values[rank])) if len(values[rank]) == 1 and all_known else ''
+            info[rank] = value.replace(' ', '_').replace('/', '_').replace('\\', '_') or (
+                'unclassified' if rank == 'family' else 'Unknown')
+        titles = sorted(known_values(group, 'subject_title'))
+        info['subject_title'] = ';'.join(titles).replace(' ', '_') or 'Unknown'
+        contig_info[contig_id] = info
+
+    with open(base_dir / "classification_review.tsv", 'w') as handle:
+        handle.write("query_id\treview_reason\n")
+        for contig_id, reason in sorted(review_reasons.items()):
+            handle.write(f"{contig_id}\t{reason}\n")
+
     # Process FASTA file and organize contigs
     unclassified_contigs = []
     taxonomy_summary = {'viruses': {}, 'bacteria': {}}
     
-    for record in SeqIO.parse(fasta_file, 'fasta'):
-        if record.id in contig_info:
-            info = contig_info[record.id]
-            org_type = info['type']
-            family = info['family']
+    with open(fasta_file) as fasta_handle:
+        for record in SeqIO.parse(fasta_handle, 'fasta'):
+            if record.id in review_reasons:
+                review_dir = base_dir / 'needs_review'
+                review_dir.mkdir(exist_ok=True)
+                write_fasta(record, review_dir / f"{record.id}.fasta")
+            elif record.id in contig_info:
+                info = contig_info[record.id]
+                org_type = info['type']
+                family = info['family']
             
-            # Create family directory if it doesn't exist
-            if family != 'unclassified':
-                family_dir = virus_dir if org_type == 'viruses' else bacteria_dir
-                family_dir = family_dir / family
-                family_dir.mkdir(exist_ok=True)
+                # Create family directory if it doesn't exist
+                if family != 'unclassified':
+                    family_dir = virus_dir if org_type == 'viruses' else bacteria_dir
+                    family_dir = family_dir / family
+                    family_dir.mkdir(exist_ok=True)
                 
-                # Track taxonomy for summary
-                if family not in taxonomy_summary[org_type]:
-                    taxonomy_summary[org_type][family] = {
-                        'count': 0,
-                        'species': set(),
-                        'genera': set()
-                    }
-                taxonomy_summary[org_type][family]['count'] += 1
-                taxonomy_summary[org_type][family]['species'].add(info['species'])
-                taxonomy_summary[org_type][family]['genera'].add(info['genus'])
+                    # Track taxonomy for summary
+                    if family not in taxonomy_summary[org_type]:
+                        taxonomy_summary[org_type][family] = {
+                            'count': 0,
+                            'species': set(),
+                            'genera': set()
+                        }
+                    taxonomy_summary[org_type][family]['count'] += 1
+                    taxonomy_summary[org_type][family]['species'].add(info['species'])
+                    taxonomy_summary[org_type][family]['genera'].add(info['genus'])
             
-            # Determine output directory
-            if family == 'unclassified':
-                output_dir_path = virus_dir / 'unclassified' if org_type == 'viruses' else bacteria_dir / 'unclassified'
+                # Determine output directory
+                if family == 'unclassified':
+                    output_dir_path = virus_dir / 'unclassified' if org_type == 'viruses' else bacteria_dir / 'unclassified'
+                else:
+                    output_dir_path = virus_dir / family if org_type == 'viruses' else bacteria_dir / family
+            
+                # Create enhanced header
+                enhanced_header = create_enhanced_header(record, info, sample_id)
+            
+                # Write contig to appropriate file with enhanced header
+                output_file = output_dir_path / f"{record.id}.fasta"
+                write_fasta(record, output_file, enhanced_header)
             else:
-                output_dir_path = virus_dir / family if org_type == 'viruses' else bacteria_dir / family
-            
-            # Create enhanced header
-            enhanced_header = create_enhanced_header(record, info, sample_id)
-            
-            # Write contig to appropriate file with enhanced header
-            output_file = output_dir_path / f"{record.id}.fasta"
-            write_fasta(record, output_file, enhanced_header)
-        else:
-            unclassified_contigs.append(record)
+                unclassified_contigs.append(record)
     
     # Write unclassified contigs
     if unclassified_contigs:
@@ -211,6 +230,8 @@ def organize_contigs(blast_results_list, fasta_file, output_dir, sample_id):
             f.write("No bacterial contigs found.\n")
         
         f.write(f"\n\nUnclassified Contigs: {len(unclassified_contigs)}\n")
+        f.write(f"Contigs requiring review: {len(review_reasons)}\n")
+        f.write("Review includes conflicting/ambiguous hits; this is not a confirmed chimera call.\n")
         
         # Add header format explanation
         f.write("\n\nFASTA HEADER FORMAT:\n")
