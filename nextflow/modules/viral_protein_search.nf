@@ -13,7 +13,13 @@ process viral_protein_search {
         tuple val(id), path("${id}_raw_viral_protein.txt"), emit: raw_vp
 
     script:
-    def taxArg = params.taxonomy_db ? "--taxonomy_db '" + file(params.taxonomy_db).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
+    def resolvedVpDb = params.viral_protein_db ?: file("${params.db_dir}/viral_proteins/refseq_viral_proteins.dmnd").toAbsolutePath().toString()
+    def resolvedTax = params.taxonomy_db ?: (
+        (params.db_dir && (params.auto_download_dbs || params.setup_databases || file("${params.db_dir}/taxonomy/taxa.sqlite").exists()))
+            ? file("${params.db_dir}/taxonomy/taxa.sqlite").toAbsolutePath().toString()
+            : null
+    )
+    def taxArg = resolvedTax ? "--taxonomy_db '" + file(resolvedTax).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
     """
     set -euo pipefail
 
@@ -21,7 +27,7 @@ process viral_protein_search {
         diamond blastp \
             --ultra-sensitive \
             --query ${candidate_orfs} \
-            --db ${params.viral_protein_db} \
+            --db "${resolvedVpDb}" \
             --evalue ${params.viral_protein_evalue} \
             --max-target-seqs 10 \
             --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovhsp evalue bitscore qlen slen stitle staxids \

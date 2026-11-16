@@ -14,17 +14,22 @@ process genomad {
         tuple val(id), path("genomad_${id}/${id}_plasmid_summary.tsv"), emit: plasmid_summary
 
     script:
+    def baseGenomad = params.genomad_db ?: file("${params.db_dir}/genomad").toAbsolutePath().toString()
     """
     set -euo pipefail
     mkdir -p genomad_${id}
 
     if [ -s "${contigs}" ] && grep -q '^>' "${contigs}"; then
+        GENOMAD_DB="${baseGenomad}"
+        if [ ! -f "\$GENOMAD_DB/genomad_db" ] && [ -d "\$GENOMAD_DB/genomad_db" ]; then
+            GENOMAD_DB="\$GENOMAD_DB/genomad_db"
+        fi
         genomad end-to-end \
             --cleanup \
             --threads ${task.cpus} \
             ${contigs} \
             genomad_${id} \
-            ${params.genomad_db}
+            "\$GENOMAD_DB"
 
         VIR_SUM=\$(find genomad_${id} -name "*_virus_summary.tsv" | head -n 1 || true)
         PLAS_SUM=\$(find genomad_${id} -name "*_plasmid_summary.tsv" | head -n 1 || true)

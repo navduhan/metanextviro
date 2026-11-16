@@ -21,7 +21,12 @@ process blastn {
         tuple val(id), path("${id}_raw_nt.txt"), emit: raw_blast_output
 
     script:
-    def taxonomyArg = params.taxonomy_db ? "--taxonomy_db '" + file(params.taxonomy_db).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
+    def resolvedTax = params.taxonomy_db ?: (
+        (params.db_dir && (params.auto_download_dbs || params.setup_databases || file("${params.db_dir}/taxonomy/taxa.sqlite").exists()))
+            ? file("${params.db_dir}/taxonomy/taxa.sqlite").toAbsolutePath().toString()
+            : null
+    )
+    def taxonomyArg = resolvedTax ? "--taxonomy_db '" + file(resolvedTax).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
     """
     # Log the start of the BLAST process
     echo " Starting BLAST search for nt database for sample: $id"

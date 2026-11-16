@@ -13,12 +13,20 @@ process checkv {
         tuple val(id), path("checkv_${id}/quality_summary.tsv"), emit: quality_summary
 
     script:
+    def baseCheckv = params.checkv_db ?: file("${params.db_dir}/checkv").toAbsolutePath().toString()
     """
     mkdir -p checkv_${id}
     if [ -s "${contigs}" ] && grep -q '^>' "${contigs}"; then
+        CHECKV_DB="${baseCheckv}"
+        if [ ! -f "\$CHECKV_DB/genome_db/checkv_reps.dmnd" ]; then
+            SUB_DMND=\$(find "\$CHECKV_DB" -name "checkv_reps.dmnd" 2>/dev/null | head -n 1 || true)
+            if [ -n "\$SUB_DMND" ]; then
+                CHECKV_DB=\$(dirname "\$(dirname "\$SUB_DMND")")
+            fi
+        fi
         checkv end_to_end \
             -t ${task.cpus} \
-            -d ${params.checkv_db} \
+            -d "\$CHECKV_DB" \
             ${contigs} \
             checkv_${id}
     else

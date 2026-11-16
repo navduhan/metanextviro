@@ -24,7 +24,9 @@ workflow INPUT_PARSER {
         exit 1, "Unsupported input format: ${params.input}. Supported formats are CSV, TSV, XLS, XLSX."
     }
 
-    ch_input_rows = Channel.from(samplesheet)
+    ch_input_rows = (samplesheet instanceof java.nio.file.Path || samplesheet instanceof File || samplesheet instanceof CharSequence)
+        ? Channel.of(file(samplesheet))
+        : samplesheet
 
     // Process file based on its type
     if (hasExtension(params.input, "csv")) {
@@ -46,11 +48,11 @@ workflow INPUT_PARSER {
             .splitCsv(header: true)
     }
 
-    // Validate and map input rows
+    // Validate and map input rows (accept both id,reads1,reads2 and sample,fastq_1,fastq_2)
     ch_input_rows = ch_input_rows.map { row ->
-        def id = row.id ?: exit(1, "Invalid input samplesheet: 'id' column is missing.")
-        def reads1 = validateFile(row.reads1, "reads1")
-        def reads2 = validateFile(row.reads2, "reads2")
+        def id = (row.id ?: row.sample) ?: exit(1, "Invalid input samplesheet: 'id' (or 'sample') column is missing.")
+        def reads1 = validateFile(row.reads1 ?: row.fastq_1, "reads1")
+        def reads2 = validateFile(row.reads2 ?: row.fastq_2, "reads2")
         
         // Return the parsed values
         [id, reads1, reads2]

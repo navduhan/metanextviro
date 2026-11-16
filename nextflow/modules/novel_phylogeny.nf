@@ -12,7 +12,9 @@ process novel_phylogeny {
         tuple val(id), path("${id}_phylogeny*"), emit: phylo_outputs
 
     script:
-    def refFaa = file(params.phylo_reference_faa).toAbsolutePath().toString()
+    def refFaa = params.phylo_reference_faa
+        ? file(params.phylo_reference_faa).toAbsolutePath().toString()
+        : file("${params.db_dir}/viral_proteins/refseq_hallmark_refs.faa").toAbsolutePath().toString()
     """
     set -euo pipefail
 

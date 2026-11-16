@@ -158,8 +158,18 @@ workflow NOVEL_VIRUS_DETECTION {
 
         SCAN_VIRAL_ARCHITECTURE(candidate_contigs_ch)
 
-        def enable_hmm = params.run_viral_hmm || (params.viral_hmm_db && (params.discover_novel_viruses || params.run_virfinder))
-        def enable_vp = params.run_viral_protein_blast || (params.viral_protein_db && (params.discover_novel_viruses || params.run_virfinder))
+        def dbDirHasHmm = params.db_dir && (
+            params.auto_download_dbs ||
+            params.setup_databases ||
+            file("${params.db_dir}/viral_hmm/vog_hallmarks.hmm").exists()
+        )
+        def dbDirHasVp = params.db_dir && (
+            params.auto_download_dbs ||
+            params.setup_databases ||
+            file("${params.db_dir}/viral_proteins/refseq_viral_proteins.dmnd").exists()
+        )
+        def enable_hmm = params.run_viral_hmm || ((params.viral_hmm_db || dbDirHasHmm) && (params.discover_novel_viruses || params.run_virfinder))
+        def enable_vp = params.run_viral_protein_blast || ((params.viral_protein_db || dbDirHasVp) && (params.discover_novel_viruses || params.run_virfinder))
 
         if (enable_hmm) {
             viral_hmm(SCAN_VIRAL_ARCHITECTURE.out.orfs)

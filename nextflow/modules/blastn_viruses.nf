@@ -21,17 +21,27 @@ process blastn_viruses {
         tuple val(id), path("${id}_raw_viruses.txt"), emit: raw_blast_output
 
     script:
-    def taxonomyArg = params.taxonomy_db ? "--taxonomy_db '" + file(params.taxonomy_db).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
+    def resolvedDb = params.blastdb_viruses ?: (
+        (params.db_dir && file("${params.db_dir}/nt_viruses/.completed").exists())
+            ? file("${params.db_dir}/nt_viruses/nt_viruses").toAbsolutePath().toString()
+            : file("${params.db_dir}/blast_viruses/refseq_viral_genomic").toAbsolutePath().toString()
+    )
+    def resolvedTax = params.taxonomy_db ?: (
+        (params.db_dir && (params.auto_download_dbs || params.setup_databases || file("${params.db_dir}/taxonomy/taxa.sqlite").exists()))
+            ? file("${params.db_dir}/taxonomy/taxa.sqlite").toAbsolutePath().toString()
+            : null
+    )
+    def taxonomyArg = resolvedTax ? "--taxonomy_db '" + file(resolvedTax).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
     """
     # Log the start of the BLAST process
     echo " Starting BLAST search for viruses for sample: $id"
     echo " Input FASTA file: ${fasta_file}"
-    echo " Using BLAST database: ${params.blastdb_viruses}"
+    echo " Using BLAST database: ${resolvedDb}"
 
     # Run BLAST search
     blastn \
         -query ${fasta_file} \
-        -db ${params.blastdb_viruses} \
+        -db "${resolvedDb}" \
         -out ${id}_raw_viruses.txt \
         -max_target_seqs ${params.blast_max_target_seqs} \
         -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovhsp evalue bitscore qlen slen stitle staxids sstrand' \

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "metanextviro"
+version = "0.2.0"
+description = "MetaNextViro: High-Throughput Virus Identification, Novel Virus Discovery, and Metagenomic Analysis Pipeline"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+authors = [
+    { name = "Naveen Duhan", email = "naveen.duhan@outlook.com" }
+]
+keywords = ["virology", "metagenomics", "nextflow", "virus-discovery", "bioinformatics"]
+
+[project.scripts]
+metanextviro = "metanextviro_cli.cli:main"
+
+[tool.setuptools]
+packages = ["metanextviro_cli"]

@@ -9,7 +9,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from unittest.mock import patch
+
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from metanextviro_cli import cli as mn_cli  # noqa: E402
 
 
 def load_setup_module():
@@ -104,6 +108,23 @@ class SetupDatabasesTests(unittest.TestCase):
         self.assertIn('refseq_viral_protein', proc.stdout)
         self.assertIn('Dry run only', proc.stdout)
         self.assertFalse((self.base / 'planned_dbs').exists())
+
+    def test_metanextviro_cli_launcher_builds_nextflow_and_setup_commands(self):
+        cmd, info = mn_cli.build_nextflow_command(['--version'])
+        self.assertIsNone(cmd)
+        self.assertIn('MetaNextViro v0.2.0', info)
+
+        setup_cmd, _ = mn_cli.build_nextflow_command(['setup-db', '--db-dir', '/tmp/dbs', '--dry-run'])
+        self.assertEqual(setup_cmd[:2], [sys.executable, str(ROOT / 'scripts/setup_databases.py')])
+        self.assertEqual(setup_cmd[2:], ['--db-dir', '/tmp/dbs', '--dry-run'])
+
+        with patch('shutil.which', return_value='/usr/local/bin/nextflow'):
+            nf_cmd, _ = mn_cli.build_nextflow_command(['--input', 'samples.csv', '-profile', 'conda'])
+            self.assertEqual(nf_cmd[:3], ['/usr/local/bin/nextflow', 'run', str(ROOT / 'main.nf')])
+            self.assertEqual(nf_cmd[3:], ['--input', 'samples.csv', '-profile', 'conda'])
+
+            nf_help, _ = mn_cli.build_nextflow_command([])
+            self.assertEqual(nf_help, ['/usr/local/bin/nextflow', 'run', str(ROOT / 'main.nf'), '--help'])
 
 
 if __name__ == '__main__':

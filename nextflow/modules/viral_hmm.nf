@@ -13,8 +13,19 @@ process viral_hmm {
         tuple val(id), path("${id}_raw_hmm_domtbl.txt"), emit: raw_domtbl
 
     script:
-    def taxArg = params.taxonomy_db ? "--taxonomy_db '" + file(params.taxonomy_db).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
-    def hmmTaxArg = params.viral_hmm_taxonomy ? "--hmm_taxonomy '" + file(params.viral_hmm_taxonomy).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
+    def resolvedHmmDb = params.viral_hmm_db ?: file("${params.db_dir}/viral_hmm/vog_hallmarks.hmm").toAbsolutePath().toString()
+    def resolvedTax = params.taxonomy_db ?: (
+        (params.db_dir && (params.auto_download_dbs || params.setup_databases || file("${params.db_dir}/taxonomy/taxa.sqlite").exists()))
+            ? file("${params.db_dir}/taxonomy/taxa.sqlite").toAbsolutePath().toString()
+            : null
+    )
+    def resolvedHmmTax = params.viral_hmm_taxonomy ?: (
+        (params.db_dir && (params.auto_download_dbs || params.setup_databases || file("${params.db_dir}/viral_hmm/vog_hmm_taxonomy.tsv").exists()))
+            ? file("${params.db_dir}/viral_hmm/vog_hmm_taxonomy.tsv").toAbsolutePath().toString()
+            : null
+    )
+    def taxArg = resolvedTax ? "--taxonomy_db '" + file(resolvedTax).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
+    def hmmTaxArg = resolvedHmmTax ? "--hmm_taxonomy '" + file(resolvedHmmTax).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
     """
     set -euo pipefail
 
@@ -25,7 +36,7 @@ process viral_hmm {
             --domE ${params.hmm_evalue} \
             --cpu ${task.cpus} \
             --domtblout ${id}_raw_hmm_domtbl.txt \
-            ${params.viral_hmm_db} \
+            "${resolvedHmmDb}" \
             ${candidate_orfs} > /dev/null
     else
         : > ${id}_raw_hmm_domtbl.txt

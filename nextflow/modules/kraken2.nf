@@ -15,6 +15,7 @@ process kraken2 {
         tuple val(id), path("${id}_kraken2_output.txt"), emit: classified_reads
 
     script:
+    def resolvedKrakenDb = params.kraken2_db ?: file("${params.db_dir}/kraken2_viral").toAbsolutePath().toString()
     """
     # Log the start of the process
     echo " Starting Kraken2 analysis for sample: $id"
@@ -26,7 +27,7 @@ process kraken2 {
     if [ -n "${reads2}" ]; then
         echo " Running Kraken2 in paired-end mode..."
         kraken2 \\
-            --db ${params.kraken2_db} \\
+            --db "${resolvedKrakenDb}" \\
             --paired \\
             --threads ${task.cpus} \\
             --output ${id}_kraken2_output.txt \\
@@ -36,7 +37,7 @@ process kraken2 {
     else
         echo " Running Kraken2 in single-end mode..."
         kraken2 \\
-            --db ${params.kraken2_db} \\
+            --db "${resolvedKrakenDb}" \\
             --threads ${task.cpus} \\
             --output ${id}_kraken2_output.txt \\
             --report ${id}_kraken2_report.txt \\

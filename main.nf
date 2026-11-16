@@ -6,10 +6,10 @@ nextflow.enable.dsl = 2
 // Author: Naveen Duhan
 
 include { metanextviro } from './nextflow/workflow/metanextviro.nf'
+include { setup_databases } from './nextflow/modules/setup_databases.nf'
 
-// Validate parameters before running workflows
 workflow {
- // Display help message if requested
+    // Display help message if requested
     if (params.help) {
         helpMSG()
         exit 0
@@ -21,70 +21,103 @@ workflow {
     if (!(params.blast_max_target_seqs.toString() ==~ /[1-9][0-9]*/)) {
         error '--blast_max_target_seqs must be a positive integer.'
     }
-
-    // Validate mandatory input parameters
-    if (!params.input) {
-        error 'Error: Input samplesheet not specified! Use --input <samplesheet> to provide input.'
-    }
-
-        // Check if input files exist
-    def checkPathParamList = [
-        params.input,
-        params.adapters,
-        params.taxonomy_db,
-        params.host_fasta,
-        params.viral_hmm_db,
-        params.viral_hmm_taxonomy,
-        params.phylo_reference_faa
-    ]
-    checkPathParamList.each { param -> 
-        if (param) { 
-            file(param, checkIfExists: true) 
-        } 
-    }
-
-    if (params.deplete_host && !params.skip_host_depletion && !params.host_fasta && !params.host_bowtie2_index) {
-        error '--deplete_host requires --host_fasta or --host_bowtie2_index.'
-    }
-    if (params.run_genomad && !params.skip_viral_analysis && !params.genomad_db) {
-        error '--run_genomad requires --genomad_db <path_to_genomad_db>.'
-    }
-    if (params.run_checkv && !params.skip_viral_analysis && !params.checkv_db) {
-        error '--run_checkv requires --checkv_db <path_to_checkv_db>.'
-    }
-    if (params.run_viral_hmm && !params.skip_novel_detection && !params.viral_hmm_db) {
-        error '--run_viral_hmm requires --viral_hmm_db <path_to_hmm_file>.'
-    }
-    if (params.run_viral_protein_blast && !params.skip_novel_detection && !params.viral_protein_db) {
-        error '--run_viral_protein_blast requires --viral_protein_db <path_to_diamond_db>.'
-    }
-    if (params.run_foldseek && !params.skip_novel_detection && !params.foldseek_db) {
-        error '--run_foldseek requires --foldseek_db <path_to_foldseek_db>.'
-    }
-    if (params.run_novel_phylogeny && !params.skip_novel_detection && !params.phylo_reference_faa) {
-        error '--run_novel_phylogeny requires --phylo_reference_faa <path_to_reference_proteins.faa>.'
+    if (!(params.db_preset in ['minimal', 'discovery_only', 'full_viral'])) {
+        error "Invalid --db_preset '${params.db_preset}'. Use minimal, discovery_only, or full_viral."
     }
     if (!(params.phylo_tool in ['fasttree', 'iqtree'])) {
         error "Invalid --phylo_tool '${params.phylo_tool}'. Use 'fasttree' or 'iqtree'."
     }
 
-    // Check mandatory parameters
-    if (params.input) { 
-        ch_input = file(params.input) 
-    } else { 
-        exit 1, 'Input samplesheet not specified!' 
-    }
+    def targetDbDir = params.db_dir ? file(params.db_dir).toAbsolutePath().toString() : null
 
-    // Check actual hard-link support before starting expensive analysis tasks.
-    if (params.publish_mode == 'link') {
-        validateHardLinks(file(params.outdir), workflow.workDir)
-    }
+    // Standalone database setup mode (no --input samplesheet required)
+    if (params.setup_databases && !params.input) {
+        if (!targetDbDir) {
+            error '--setup_databases requires --db_dir <directory>.'
+        }
+        setup_databases(Channel.of(targetDbDir), Channel.of(params.db_preset))
+    } else {
+        // Analysis mode (with optional automatic pre-run database download)
+        if (!params.input) {
+            error 'Error: Input samplesheet not specified! Use --input <samplesheet> to run analysis, or --setup_databases to prepare databases.'
+        }
 
-    // Run the MetaNextViro sub-workflow
-    metanextviro(ch_input)
+        def checkPathParamList = [
+            params.input,
+            params.adapters,
+            params.taxonomy_db,
+            params.host_fasta,
+            params.viral_hmm_db,
+            params.viral_hmm_taxonomy,
+            params.phylo_reference_faa
+        ]
+        checkPathParamList.each { param ->
+            if (param) {
+                file(param, checkIfExists: true)
+            }
+        }
+
+        def willDownloadDbs = (params.setup_databases || params.auto_download_dbs)
+        def presetCoversFull = willDownloadDbs && params.db_preset == 'full_viral'
+        def presetCoversDiscovery = willDownloadDbs && (params.db_preset in ['minimal', 'discovery_only', 'full_viral'])
+        def presetCoversMinimal = willDownloadDbs && (params.db_preset in ['minimal', 'full_viral'])
+
+        if (params.deplete_host && !params.skip_host_depletion && !params.host_fasta && !params.host_bowtie2_index) {
+            error '--deplete_host requires --host_fasta or --host_bowtie2_index.'
+        }
+        if (params.run_genomad && !params.skip_viral_analysis && !(params.genomad_db || hasDbPath(targetDbDir, 'genomad') || presetCoversFull)) {
+            error "--run_genomad requires --genomad_db or running '--setup_databases --db_preset full_viral --db_dir ${targetDbDir}'."
+        }
+        if (params.run_checkv && !params.skip_viral_analysis && !(params.checkv_db || hasDbPath(targetDbDir, 'checkv') || presetCoversFull)) {
+            error "--run_checkv requires --checkv_db or running '--setup_databases --db_preset full_viral --db_dir ${targetDbDir}'."
+        }
+        if (params.run_viral_hmm && !params.skip_novel_detection && !(params.viral_hmm_db || hasDbPath(targetDbDir, 'viral_hmm/vog_hallmarks.hmm') || presetCoversDiscovery)) {
+            error "--run_viral_hmm requires --viral_hmm_db or running '--setup_databases --db_dir ${targetDbDir}'."
+        }
+        if (params.run_viral_protein_blast && !params.skip_novel_detection && !(params.viral_protein_db || hasDbPath(targetDbDir, 'viral_proteins/refseq_viral_proteins.dmnd') || presetCoversDiscovery)) {
+            error "--run_viral_protein_blast requires --viral_protein_db or running '--setup_databases --db_dir ${targetDbDir}'."
+        }
+        if (params.run_foldseek && !params.skip_novel_detection && !params.foldseek_db) {
+            error '--run_foldseek requires --foldseek_db <path_to_foldseek_db>.'
+        }
+        if (params.run_novel_phylogeny && !params.skip_novel_detection && !(params.phylo_reference_faa || hasDbPath(targetDbDir, 'viral_proteins/refseq_hallmark_refs.faa') || presetCoversDiscovery)) {
+            error "--run_novel_phylogeny requires --phylo_reference_faa or running '--setup_databases --db_dir ${targetDbDir}'."
+        }
+
+        if (!workflow.preview && !willDownloadDbs) {
+            def hasKraken = params.kraken2_db || hasDbPath(targetDbDir, 'kraken2_viral/hash.k2d')
+            if (!params.skip_taxonomic_profiling && !hasKraken) {
+                error "No Kraken2 database found in '${targetDbDir}'. Run 'nextflow run navduhan/metanextviro --setup_databases --db_dir ${targetDbDir} -profile conda', pass '--auto_download_dbs', or supply '--kraken2_db' / '-profile sdsu'."
+            }
+            def selectedBlast = (params.blast_options instanceof Collection ? params.blast_options : params.blast_options.toString().split(','))
+                .collect { opt -> opt.toString().trim().toLowerCase() }
+            def needsViralBlast = ('viruses' in selectedBlast || 'nt_viruses' in selectedBlast || 'all' in selectedBlast)
+            def hasViralBlast = params.blastdb_viruses || hasDbPath(targetDbDir, 'blast_viruses/.completed') || hasDbPath(targetDbDir, 'nt_viruses/.completed')
+            if (!params.skip_blast_annotation && !params.skip_assembly && needsViralBlast && !hasViralBlast && !presetCoversMinimal) {
+                error "No viral BLAST database found in '${targetDbDir}'. Run 'nextflow run navduhan/metanextviro --setup_databases --db_dir ${targetDbDir} -profile conda', pass '--auto_download_dbs', or supply '--blastdb_viruses' / '-profile sdsu'."
+            }
+        }
+
+        // Check actual hard-link support before starting expensive analysis tasks.
+        if (params.publish_mode == 'link') {
+            validateHardLinks(file(params.outdir), workflow.workDir)
+        }
+
+        if (willDownloadDbs) {
+            setup_databases(Channel.of(targetDbDir), Channel.of(params.db_preset))
+            ch_input = setup_databases.out.ready_db_dir.map { _ready -> file(params.input) }
+        } else {
+            ch_input = Channel.value(file(params.input))
+        }
+
+        metanextviro(ch_input)
+    }
 }
 
-// Helper functions
+def hasDbPath(targetDbDir, relPath) {
+    return targetDbDir != null && file("${targetDbDir}/${relPath}").exists()
+}
+
 def validateHardLinks(outputDir, workDir) {
     def source = null
     def destination = null
@@ -113,75 +146,51 @@ def helpMSG() {
                                                 Author : Naveen Duhan (naveen.duhan@outlook.com)
     ______________________________________________________________________________________________________________________________________________
 
-    Usage example:
+    Quick Start (Direct GitHub or CLI execution):
 
-    nextflow run metanextviro/main.nf [options] --input <sample file /samplesheet> --outdir <output_directory>
+    # 1. One-time minimal database download & setup (~1.1 GB, runs via Nextflow):
+    nextflow run navduhan/metanextviro --setup_databases --db_dir ~/.metanextviro/dbs -profile conda
 
-    Options:
-    --input           Path to the input samplesheet (mandatory)
-    --publish_mode    Output publishing: copy (default), link (same filesystem), symlink, rellink
+    # 2. Routine targeted virus run (auto-discovers databases from --db_dir):
+    nextflow run navduhan/metanextviro --input samplesheet.csv --outdir results -profile conda
+
+    # 3. Novel virus discovery + VirFinder (with automatic Order/Family assignment):
+    nextflow run navduhan/metanextviro --input samplesheet.csv --discover_novel_viruses --run_virfinder -profile conda
+
+    Database Management Options:
+    --db_dir            Directory for managed databases (default: ~/.metanextviro/dbs)
+    --setup_databases   Download and build reference databases in --db_dir (can run standalone without --input)
+    --auto_download_dbs Automatically build missing minimal databases in --db_dir before running analysis
+    --db_preset         Database bundle: 'minimal' (~1.1 GB, default), 'discovery_only' (~375 MB), 'full_viral' (~4 GB)
+    --db_components     Optional comma-separated component list overriding --db_preset
+    --db_force          Force rebuilding databases even if already present
+
+    Core Options:
+    --input             Path to the input samplesheet (mandatory for analysis runs)
+    --outdir            Directory for output files (default: './results')
+    --publish_mode      Output publishing: copy (default), link (same filesystem), symlink, rellink
+    --trimming_tool     Trimming tool: 'fastp', 'flexbar', or 'trim_galore' (default: 'trim_galore')
+    --assembler         Assembler: 'megahit' (default), 'metaspades', or 'hybrid'
+    --blast_options     Databases: viruses (alias: nt_viruses), nt, nr, all, or comma-separated (default: viruses)
     --blast_max_target_seqs Maximum subject sequences reported per query (default: 50)
-    --outdir          Directory for output files (default: './results')
-    --adapters        Path to the adapters file (optional, for trimming)
-    --trimming_tool   Trimming tool to use: 'fastp', 'flexbar', or 'trim_galore' (default: 'trim_galore')
-    --assembler       Assembler to use: 'megahit', 'metaspades', or 'hybrid' (default: 'megahit')
-    --kraken2_db      Path to Kraken2 database (required for taxonomic profiling)
-    --blast_options   Databases: viruses (alias: nt_viruses), nt, nr, all, or comma-separated values (default: viruses)
-    --blastdb_viruses Path to BLAST nt_viruses database (used by default)
-    --blastdb_nt      Path to BLAST nt database (used when nt or all is selected)
-    --blastdb_nr      Path to BLAST nr database (used with blastx when nr or all is selected)
-    --diamonddb       Path to DIAMOND protein database
-    --taxonomy_db     Existing local ETE taxonomy SQLite database (default: ~/.etetoolkit/taxa.sqlite)
-    --blastx_tool     Protein search tool: diamond or blastx (default: diamond)
-    --checkv_db       Path to CheckV database (required only with --run_checkv)
-    --run_checkv      Enable CheckV assessment on unassigned/divergent contigs (default: false)
-    --run_virfinder   Enable enhanced VirFinder (FDR q-value + entropy QC) on unassigned contigs (default: false)
-    --run_genomad     Enable geNomad marker + neural virus/plasmid classifier (default: false; requires --genomad_db)
-    --genomad_db      Path to geNomad database
-    --organize_contigs Enable contig organization using selected BLAST results (default: false)
+    --blastx_tool       Protein search tool: diamond (default) or blastx
+    --organize_contigs  Enable contig organization using selected BLAST results (default: false)
+    --account           SLURM account to charge (optional; uses scheduler default when omitted)
 
-    Opt-in Novel Virus Discovery options (disabled by default for targeted runs):
+    Opt-in Novel Virus Discovery & VirFinder Options (disabled by default):
     --discover_novel_viruses  Enable automated post-BLAST novel virus triage, ORF/DTR/EVE scan & XLSX/TSV report
-    --discovery_all_contigs   Run discovery/viral classifiers on all contigs instead of skipping confident BLAST hits
-    --novel_min_contig_length Minimum contig length (bp) for novel virus discovery (default: 500)
-    --known_virus_identity    BLAST % identity threshold to skip already-known viruses (default: 80.0)
-    --known_virus_coverage    BLAST % union coverage threshold to skip already-known viruses (default: 50.0)
+    --run_virfinder           Enable enhanced VirFinder (FDR q-value + entropy QC + Order/Family follow-up)
+    --run_checkv              Enable CheckV assessment on unassigned/divergent contigs
+    --run_genomad             Enable geNomad marker + neural virus/plasmid classifier
+    --discovery_all_contigs   Score all contigs instead of automatically skipping confident BLAST hits
     --deplete_host            Subtract host reads prior to assembly (requires --host_fasta or --host_bowtie2_index)
-    --host_fasta              Host reference FASTA for pre-assembly depletion
-    --host_bowtie2_index      Pre-built Bowtie2 index prefix for host depletion
-    --run_viral_hmm           Scan candidate ORFs against viral hallmark HMMs (requires --viral_hmm_db)
-    --viral_hmm_db            Path to HMMER profile database (e.g. NeoRdRp, RdRp-scan, RVDB-hmm, VOGDB)
-    --run_viral_protein_blast Run ultra-sensitive DIAMOND blastp on candidate ORFs (requires --viral_protein_db)
-    --viral_protein_db        Path to curated viral protein DIAMOND database (e.g. RVDB or RefSeq Viral Protein)
-    --run_foldseek            Run Foldseek 3D structural homology search on candidate ORFs (requires --foldseek_db)
-    --foldseek_db             Path to Foldseek target database (and optional --foldseek_prostt5_weights)
-    --run_novel_phylogeny     Align promoted novel ORFs with --phylo_reference_faa via MAFFT + FastTree/IQ-TREE
-    --phylo_reference_faa     Reference protein FASTA for phylogenetic placement
-    --phylo_tool              Phylogenetic inference tool: 'fasttree' (default) or 'iqtree'
-    --min_contig_length Minimum contig length for assembly (default: 200)
-    --quality         Quality threshold for trimming (default: 30)
-    --profile         Nextflow profile to use (default: 'slurm')
-    --account         SLURM account to charge (optional; uses the scheduler default when omitted)
-    --help            Show this help message and exit
+    --run_viral_hmm           Scan candidate ORFs against viral hallmark HMMs
+    --run_viral_protein_blast Run ultra-sensitive DIAMOND blastp on candidate ORFs
+    --run_foldseek            Run Foldseek 3D structural homology search on candidate ORFs
+    --run_novel_phylogeny     Align promoted novel ORFs with reference hallmarks via MAFFT + FastTree/IQ-TREE
 
-    Skip options:
-    --skip_quality              Skip the quality control step (FastQC)
-    --skip_trimming             Skip the trimming step
-    --skip_assembly             Skip the assembly step
-    --skip_blast_annotation     Skip the BLAST annotation step
-    --skip_taxonomic_profiling  Skip the taxonomic profiling step (Kraken2)
-    --skip_viral_analysis       Skip any requested CheckV and VirFinder analysis
-    --skip_coverage_analysis    Skip the coverage analysis step
-    --skip_contig_organization  Skip contig organization even when --organize_contigs is set
-    --skip_visualization        Skip the visualization step
-    --skip_final_report         Skip the final report generation
-    --skip_report               Alias for --skip_final_report
-
-
-    Example samplesheet:
-    sample,fastq_1,fastq_2
-    sample1,/path/to/sample1_R1.fastq.gz,/path/to/sample1_R2.fastq.gz
-    sample2,/path/to/sample2_R1.fastq.gz,/path/to/sample2_R2.fastq.gz
+    Profiles (-profile):
+    local, slurm, sdsu, conda, mamba, docker, singularity, apptainer
 
     """.stripIndent()
 }

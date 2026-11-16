@@ -106,25 +106,38 @@ graph TD
 - Java (>=8)
 - Conda, Docker, or Singularity
 
-### Basic Usage
+### Basic Usage (No Manual Git Clone Required)
 ```bash
-# Clone the repository
-git clone https://github.com/navduhan/metanextviro.git
-cd metanextviro
-
-# Run with conda (recommended for first-time users)
-nextflow run main.nf \
-  --input <your_samplesheet>.csv \
-  --outdir <output_directory> \
-  --kraken2_db <path_to_your_kraken2_db> \
+# 1. One-time database setup directly through Nextflow (~1.1 GB minimal viral DBs):
+nextflow run navduhan/metanextviro \
+  --setup_databases \
+  --db_dir ~/.metanextviro/dbs \
   -profile conda
 
-# Run with singularity (recommended for HPC)
-nextflow run main.nf \
-  --input <your_samplesheet>.csv \
-  --outdir <output_directory> \
-  --kraken2_db <path_to_your_kraken2_db> \
-  -profile singularity,slurm
+# 2. Routine known-virus analysis (auto-detects databases in --db_dir):
+nextflow run navduhan/metanextviro \
+  --input samplesheet.csv \
+  --outdir results \
+  -profile conda
+
+# 3. Novel virus discovery + VirFinder (with automatic Order/Family assignment):
+nextflow run navduhan/metanextviro \
+  --input samplesheet.csv \
+  --outdir results \
+  --discover_novel_viruses \
+  --run_virfinder \
+  -profile conda
+
+# Optional: Install the `metanextviro` CLI launcher via pip:
+pip install git+https://github.com/navduhan/metanextviro.git
+metanextviro --setup_databases -profile conda
+metanextviro --input samplesheet.csv -profile conda
+
+# On SDSU HPC cluster (uses pre-configured /mmfs1 reference paths + SLURM):
+nextflow run navduhan/metanextviro \
+  --input samplesheet.csv \
+  --account <slurm_account> \
+  -profile sdsu,singularity
 ```
 
 ### Sample Input Format
@@ -309,34 +322,30 @@ nextflow run main.nf --input samplesheet.csv \
 `--skip_novel_detection` overrides `--discover_novel_viruses` and its hallmark/protein/3D/phylogeny modules;
 and `--skip_contig_organization` overrides `--organize_contigs`.
 
-## Minimal Database Download & Setup (`scripts/setup_databases.py`)
+## Minimal Database Download & Setup (Nextflow `--setup_databases` or Standalone)
 
-Use `scripts/setup_databases.py` to download, verify, and build a compact reference
-database suite and generate a ready-to-use Nextflow `databases.config`:
+Databases can be downloaded and indexed **directly through Nextflow** (recommended; runs on the local submission node even under `-profile slurm` so compute nodes do not need internet access) or via `scripts/setup_databases.py`:
 
 ```bash
-# Preview planned downloads and sizes without downloading anything:
-python scripts/setup_databases.py --db-dir ./metanextviro_dbs --preset minimal --dry-run
+# Option A: Directly via Nextflow (no --input required; uses ~/.metanextviro/dbs by default):
+nextflow run navduhan/metanextviro --setup_databases --db_preset minimal -profile conda
 
-# 1. Minimal complete suite (~1.1 GB download: ETE3 taxonomy, RefSeq viral BLASTN,
-#    RefSeq viral protein DIAMOND DB with taxids, VOGDB HMMs + LCA taxonomy, Kraken2 viral):
-python scripts/setup_databases.py --db-dir ./metanextviro_dbs --preset minimal --threads 8
+# Option B: Single-command auto-download + analysis:
+nextflow run navduhan/metanextviro --input samplesheet.csv --auto_download_dbs -profile conda
 
-# 2. Discovery-only add-on (~375 MB download) when Kraken2 and nt_viruses already exist on HPC:
-python scripts/setup_databases.py --db-dir ./metanextviro_dbs --preset discovery_only --threads 8
-
-# 3. Full viral suite (~4.0 GB download; adds CheckV and geNomad databases):
-python scripts/setup_databases.py --db-dir ./metanextviro_dbs --preset full_viral --threads 8
+# Option C: Standalone Python helper (supports --dry-run preview):
+python scripts/setup_databases.py --db-dir ~/.metanextviro/dbs --preset minimal --dry-run
+python scripts/setup_databases.py --db-dir ~/.metanextviro/dbs --preset minimal --threads 8
 ```
 
-Pass the generated `databases.config` to Nextflow:
+Once built in `--db_dir` (default `~/.metanextviro/dbs`), Nextflow **automatically discovers** `taxonomy_db`, `blastdb_viruses`, `kraken2_db`, `viral_protein_db`, `viral_hmm_db`, `viral_hmm_taxonomy`, and `phylo_reference_faa` without needing `-c databases.config`:
 
 ```bash
 # Routine targeted run (fast — novel discovery stays off):
-nextflow run main.nf -c ./metanextviro_dbs/databases.config --input samplesheet.csv
+nextflow run navduhan/metanextviro --input samplesheet.csv -profile conda
 
 # VirFinder + Novel Virus Discovery (automatically assigns putative Order/Family/Kingdom!):
-nextflow run main.nf -c ./metanextviro_dbs/databases.config --input samplesheet.csv --discover_novel_viruses --run_virfinder
+nextflow run navduhan/metanextviro --input samplesheet.csv --discover_novel_viruses --run_virfinder -profile conda
 ```
 
 ## Opt-in Automated Novel Virus Discovery & Putative Order/Family Assignment
