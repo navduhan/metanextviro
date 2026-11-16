@@ -95,12 +95,42 @@ def organize_contigs(blast_results_list, fasta_file, output_dir, sample_id):
     
     # Normalize column names (strip whitespace, lower-case for robust matching)
     df.columns = [col.strip().lower() for col in df.columns]
-    
-    # Preserve every local alignment, including conflicting regions/databases.
-    df.to_csv(base_dir / "classification_evidence.tsv", sep='\t', index=False)
+
+    for numeric_col in ('alignment_length', 'bit_score', 'evalue', 'query_length'):
+        if numeric_col in df.columns:
+            df[numeric_col] = pd.to_numeric(df[numeric_col], errors='raise')
+
+    sort_cols = []
+    ascending = []
+    temp_cols = []
+    if 'alignment_length' in df.columns:
+        df['_contig_max_aln'] = df.groupby('query_id')['alignment_length'].transform('max')
+        sort_cols.append('_contig_max_aln')
+        ascending.append(False)
+        temp_cols.append('_contig_max_aln')
     if 'bit_score' in df.columns:
-        df['bit_score'] = pd.to_numeric(df['bit_score'], errors='raise')
-        df = df.sort_values(by=['query_id', 'bit_score'], ascending=[True, False])
+        df['_contig_max_score'] = df.groupby('query_id')['bit_score'].transform('max')
+        sort_cols.append('_contig_max_score')
+        ascending.append(False)
+        temp_cols.append('_contig_max_score')
+    sort_cols.append('query_id')
+    ascending.append(True)
+    if 'bit_score' in df.columns:
+        sort_cols.append('bit_score')
+        ascending.append(False)
+    if 'alignment_length' in df.columns:
+        sort_cols.append('alignment_length')
+        ascending.append(False)
+    if 'evalue' in df.columns:
+        sort_cols.append('evalue')
+        ascending.append(True)
+
+    df = df.sort_values(by=sort_cols, ascending=ascending, kind='mergesort')
+    if temp_cols:
+        df = df.drop(columns=temp_cols)
+
+    # Preserve every local alignment in descending biological order.
+    df.to_csv(base_dir / "classification_evidence.tsv", sep='\t', index=False)
 
     contig_info = {}
     review_reasons = {}

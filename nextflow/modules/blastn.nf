@@ -4,16 +4,21 @@ process blastn {
     tag "$id"  // Tag the task with the query ID for traceability
     label 'high'  // Assign a label for resource management
 
-    publishDir "${params.outdir}/blast_results", mode: params.publish_mode, overwrite: true, failOnError: true  // Define output directory and handling
+    publishDir "${params.outdir}/blast_results",
+        mode: params.publish_mode,
+        overwrite: true,
+        failOnError: true,
+        saveAs: { filename -> filename.startsWith("${id}_best_hits_") ? filename : "details/${filename}" }
 
     input:
         tuple val(id), path(fasta_file)  // Input: Sample ID and FASTA file
 
     output:
-        tuple val(id), path("${id}_hits_nt.tsv"), emit: formatted_blast_output
-        tuple val(id), path("${id}_hit_summary_nt.tsv"), emit: hit_summary
-        tuple val(id), path("${id}_best_hits_nt.xls"), emit: best_hit_summary
-        tuple val(id), path("${id}_nt.txt"), emit: raw_blast_output
+        tuple val(id), path("${id}_all_hsps_nt.tsv"), emit: formatted_blast_output
+        tuple val(id), path("${id}_subject_summary_nt.tsv"), emit: hit_summary
+        tuple val(id), path("${id}_best_hits_nt.tsv"), emit: best_hit_tsv
+        tuple val(id), path("${id}_best_hits_nt.xlsx"), emit: best_hit_summary
+        tuple val(id), path("${id}_raw_nt.txt"), emit: raw_blast_output
 
     script:
     def taxonomyArg = params.taxonomy_db ? "--taxonomy_db '" + file(params.taxonomy_db).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
@@ -27,13 +32,13 @@ process blastn {
     blastn \
         -query ${fasta_file} \
         -db ${params.blastdb_nt} \
-        -out ${id}_nt.txt \
+        -out ${id}_raw_nt.txt \
         -max_target_seqs ${params.blast_max_target_seqs} \
         -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovhsp evalue bitscore qlen slen stitle staxids sstrand' \
         -num_threads ${task.cpus}
 
     # Verify BLAST output
-    if [ ! -f "${id}_nt.txt" ]; then
+    if [ ! -f "${id}_raw_nt.txt" ]; then
         echo " Error: BLAST failed to generate output for sample: $id" >&2
         exit 1
     fi
@@ -43,14 +48,14 @@ process blastn {
 
     # Run Python script to process the BLAST results
     python3 ${workflow.projectDir}/nextflow/bin/process_blast_results.py \
-        -b ${id}_nt.txt \
+        -b ${id}_raw_nt.txt \
         -f ${fasta_file} \
         -p ${id} \
         -s nt \
         --query_coverage_type qcovhsp ${taxonomyArg}
 
     # Verify processed output
-    if [ ! -f "${id}_best_hits_nt.xls" ]; then
+    if [ ! -f "${id}_best_hits_nt.tsv" ] || [ ! -f "${id}_best_hits_nt.xlsx" ]; then
         echo " Error: Failed to process BLAST results for sample: $id" >&2
         exit 1
     fi

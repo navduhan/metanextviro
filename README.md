@@ -177,7 +177,7 @@ All dependencies can be installed using the provided `environment.yml` file or a
 - MEGAHIT, SPAdes, BLAST+, DIAMOND, Kraken2, QUAST
 - Bowtie2, Samtools, Bedtools
 - CheckV only when `--run_checkv` is enabled; VirFinder (R) only when `--run_virfinder` is enabled
-- Python: biopython, pandas, matplotlib, seaborn, ete3
+- Python: biopython, pandas, openpyxl, matplotlib, seaborn, ete3
 - R: r-base, r-virfinder (required only for optional VirFinder analysis)
 
 ## Installation
@@ -356,20 +356,27 @@ depth pass and divide by full contig length, including uncovered positions.
 
 ## BLAST alignment evidence
 
-Annotation no longer reduces the evidence to one alignment per contig. Each
-selected database produces the following files under `blast_results/`:
+Each selected database writes final per-contig summary tables at the top level of
+`blast_results/` and supporting multi-HSP/raw evidence under `blast_results/details/`:
 
-- `<sample>_<database>.txt`: the unmodified raw tabular search output.
-- `<sample>_hits_<database>.tsv`: every reported HSP, with original coordinates,
-  scores, taxonomy, database label, and sequence length. This is the primary
-  downstream annotation input. Full contig sequences remain in the assembly FASTA
-  rather than being repeated in every HSP row.
-- `<sample>_hit_summary_<database>.tsv`: one row per query/subject pair, recording
-  HSP count, merged query intervals, covered query bases, and query union coverage.
+- `blast_results/<sample>_best_hits_<database>.xlsx`: formatted Excel workbook with
+  one best hit per contig, sorted **descending** by `alignment_length`, `bit_score`,
+  `evalue`, `percent_identity`, and `query_length`. Includes merged subject union
+  coverage (`query_union_coverage`, `hsp_count`, `query_regions`), frozen header row,
+  AutoFilter, clamped column widths with no row wrapping, and the contig `sequence`
+  in the final column (sequences over Excel's 32,767-character cell limit note the
+  truncation and remain complete in the TSV and assembly FASTA).
+- `blast_results/<sample>_best_hits_<database>.tsv`: tab-separated table with the
+  exact same descending row and column order and complete contig `sequence` strings.
+- `blast_results/details/<sample>_subject_summary_<database>.tsv`: one row per
+  query/subject pair, ordered by descending contig rank and `subject_rank` (`1..N`),
+  recording HSP count, merged query intervals, covered query bases, and union coverage.
   Overlaps are counted once; gaps between intervals remain uncovered.
-- `<sample>_best_hits_<database>.xls`: a compatibility **tab-separated text**
-  report with one representative HSP per query, ranked by bit score, then E-value
-  and alignment length. It is not a binary Excel file or the complete evidence.
+- `blast_results/details/<sample>_all_hsps_<database>.tsv`: every reported HSP sorted
+  by descending contig rank and HSP score, with coordinates, scores, taxonomy, and
+  database label. This is the primary downstream annotation input; sequences are not
+  repeated across HSP rows.
+- `blast_results/details/<sample>_raw_<database>.txt`: unmodified raw tabular search output.
 
 Coordinates are **1-based, inclusive**. Query union coverage describes the union
 of alignment coordinate spans, not read coverage or genome completeness. For
@@ -477,7 +484,7 @@ results/
 ├── metaspades_assembly/  # metaSPAdes output when selected
 ├── hybrid_assembly/      # Merged/clustered output when hybrid is selected
 ├── assembly_stats/       # Assembly quality assessment (QUAST)
-├── blast_results/        # BLAST annotation results
+├── blast_results/        # Top-level best_hits (.xlsx + .tsv) and details/ evidence tables
 ├── kraken2_results/      # Kraken2 classification results
 ├── krona_results/        # Krona HTML visualizations
 ├── organized_contigs/    # Organized contigs by taxonomy (when enabled)

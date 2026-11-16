@@ -120,9 +120,17 @@ trace.overwrite = true
 command = ['nextflow', '-c', 'smoke.config', 'run', 'smoke.nf', '-ansi-log', 'false', '-with-trace', 'trace.tsv']
 run(command, 'nextflow_diamond')
 for suffix in ['nt','viruses','nr']:
-    hits = table(BASE / f'results/blast_results/sample_hits_{suffix}.tsv')
+    best_tsv = BASE / f'results/blast_results/sample_best_hits_{suffix}.tsv'
+    best_xlsx = BASE / f'results/blast_results/sample_best_hits_{suffix}.xlsx'
+    summary_tsv = BASE / f'results/blast_results/details/sample_subject_summary_{suffix}.tsv'
+    hsps_tsv = BASE / f'results/blast_results/details/sample_all_hsps_{suffix}.tsv'
+    raw_txt = BASE / f'results/blast_results/details/sample_raw_{suffix}.txt'
+    assert best_tsv.is_file() and best_xlsx.is_file() and summary_tsv.is_file(), suffix
+    best_rows = table(best_tsv)
+    assert len(best_rows) == 1 and best_rows[0]['sequence'], best_rows
+    hits = table(hsps_tsv)
     assert len(hits) >= (2 if suffix == 'nr' else 3), (suffix, hits)
-    raw_lines = (BASE / f'results/blast_results/sample_{suffix}.txt').read_text().splitlines()
+    raw_lines = raw_txt.read_text().splitlines()
     assert len(hits) == len(raw_lines), 'a reported HSP was lost'
     assert {row['subject_id'].split('|')[-1] for row in hits} == {'refA','refB'}, hits
     assert {row['family'] for row in hits} == {'Family_A','Family_B'}
@@ -157,7 +165,7 @@ for published in (BASE / 'results_hardlinks').rglob('*'):
         candidates = [p for p in (BASE / 'work').rglob(published.name) if p.is_file() and not p.is_symlink()]
         assert any(os.path.samefile(published, candidate) for candidate in candidates), published
 blastx_run = run(command + ['--blastx_tool','blastx','-resume'], 'nextflow_blastx')
-assert len(table(BASE / 'results/blast_results/sample_hits_nr.tsv')) >= 2
+assert len(table(BASE / 'results/blast_results/details/sample_all_hsps_nr.tsv')) >= 2
 
 # Native coverage regression: 5 covered bases at depth 2 in a length-10 contig
 # must mean depth 1, breadth 50%; a completely unused contig must remain present.

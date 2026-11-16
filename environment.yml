@@ -26,6 +26,7 @@ dependencies:
   - ete3
   - biopython
   - pandas
+  - openpyxl
   - matplotlib
   - seaborn
   - r-base =4.3.1
