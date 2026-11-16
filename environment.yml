@@ -19,6 +19,9 @@ dependencies:
   - kraken2
   - krona
   - cd-hit
+  - hmmer
+  - mafft
+  - fasttree
   - quast
   - bowtie2
   - samtools

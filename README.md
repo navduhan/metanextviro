@@ -259,8 +259,16 @@ All parameters can be set on the command line or in `nextflow.config`.
 | --diamonddb         | Path to DIAMOND protein database                                  | (optional)        |
 | --blastx_tool       | BLASTX tool: `diamond`, `blastx` (DIAMOND is much faster)         | `diamond`         |
 | --checkv_db         | Path to CheckV database (required only with `--run_checkv`)         | configured path   |
-| --run_checkv        | Enable CheckV quality/completeness assessment                      | `false`           |
-| --run_virfinder     | Enable VirFinder classification in the viral analysis step        | `false`           |
+| --run_checkv        | Enable CheckV assessment on unassigned/divergent contigs           | `false`           |
+| --run_virfinder     | Enable enhanced VirFinder (FDR q-value + entropy QC) on unassigned contigs | `false`   |
+| --run_genomad       | Enable geNomad virus/plasmid/provirus classifier (`--genomad_db`)  | `false`           |
+| --discover_novel_viruses | Enable automated post-BLAST novel virus discovery & XLSX/TSV report | `false`      |
+| --discovery_all_contigs | Run viral/discovery tools on all contigs instead of skipping confident BLAST hits | `false` |
+| --deplete_host      | Subtract host reads before assembly (`--host_fasta` or `--host_bowtie2_index`) | `false` |
+| --run_viral_hmm     | Scan candidate ORFs against viral hallmark HMMs (`--viral_hmm_db`) | `false`           |
+| --run_viral_protein_blast | Run ultra-sensitive DIAMOND on candidate ORFs (`--viral_protein_db`) | `false`   |
+| --run_foldseek      | Run Foldseek 3D structural search on candidate ORFs (`--foldseek_db`) | `false`        |
+| --run_novel_phylogeny | Align novel candidate ORFs with `--phylo_reference_faa` (MAFFT + FastTree/IQ-TREE) | `false` |
 | --organize_contigs  | Enable contig organization using selected BLAST results           | `false`           |
 | --min_contig_length | Minimum contig length for assembly                                | 200               |
 | --quality           | Quality threshold for trimming                                    | 30                |
@@ -279,14 +287,38 @@ nextflow run main.nf --input samplesheet.csv --run_checkv --checkv_db /path/to/c
 nextflow run main.nf --input samplesheet.csv --run_virfinder --organize_contigs
 nextflow run main.nf --input samplesheet.csv --blast_options all
 nextflow run main.nf --input samplesheet.csv --blast_options viruses,nt
+# Enable opt-in novel virus discovery (automatically skips contigs already identified by BLAST):
+nextflow run main.nf --input samplesheet.csv --discover_novel_viruses --run_virfinder
+
+# Full novel/divergent virus discovery cascade with optional external databases:
+nextflow run main.nf --input samplesheet.csv \
+  --deplete_host --host_fasta host_genome.fa \
+  --discover_novel_viruses \
+  --run_virfinder \
+  --run_checkv --checkv_db /path/to/checkv_db \
+  --run_genomad --genomad_db /path/to/genomad_db \
+  --run_viral_hmm --viral_hmm_db /path/to/viral_hallmarks.hmm \
+  --run_viral_protein_blast --viral_protein_db /path/to/rvdb.dmnd \
+  --run_novel_phylogeny --phylo_reference_faa /path/to/reference_hallmarks.faa
 ```
 
 `all` runs the viruses and NT nucleotide searches plus the NR protein search
 (DIAMOND by default, or BLASTX with `--blastx_tool blastx`). Lists such as
 `blast_options = ['viruses', 'nt']` are also supported in configuration files.
-`--skip_viral_analysis` overrides both `--run_checkv` and `--run_virfinder`, and
-`--skip_contig_organization` overrides `--organize_contigs`. Contig organization
-requires assembly and BLAST annotation results; it can use the default viruses-only results.
+`--skip_viral_analysis` overrides `--run_checkv`, `--run_virfinder`, and `--run_genomad`;
+`--skip_novel_detection` overrides `--discover_novel_viruses` and its hallmark/protein/3D/phylogeny modules;
+and `--skip_contig_organization` overrides `--organize_contigs`.
+
+## Opt-in Automated Novel Virus Discovery
+
+All novel-virus discovery steps are **disabled by default** so routine targeted surveillance runs stay fast.
+When `--discover_novel_viruses` (or `--run_virfinder` / `--run_checkv` / `--run_genomad`) is enabled:
+
+1. **Automated Post-BLAST Contig Triage (`triage_contigs.py`)**: Evaluates all BLAST alignments first and skips contigs already confidently identified as known viruses (`≥ 80%` identity and `≥ 50%` union coverage by default) or cellular/host sequences, forwarding only unassigned, divergent, or ambiguous contigs (`≥ 500 bp`) to downstream discovery tools (override with `--discovery_all_contigs`).
+2. **Intrinsic Genome Architecture & EVE/Repeat Screening (`scan_viral_architecture.py`)**: Predicts 6-frame viral ORFs, coding density, Direct/Inverted Terminal Repeats (`DTR`/`ITR`), 3-mer Shannon entropy low-complexity flags, and stop-codon fragmentation warnings for Endogenous Viral Elements (EVEs).
+3. **Enhanced VirFinder (`run_virfinder.R`)**: Computes Benjamini–Hochberg / `VF.qvalue` FDR *q*-values, screens out low-complexity repeat artifacts, assigns confidence tiers, handles empty candidate sets safely, and sorts results in descending score order.
+4. **Optional Homology & Classifier Layers**: Supports `geNomad` (`--run_genomad`, separating plasmids and proviruses), `CheckV` (`--run_checkv`), `HMMER` hallmark scans (`--run_viral_hmm` for RdRp, Capsid, Rep, Helicase, Terminase), ultra-sensitive `DIAMOND` curated viral protein search (`--run_viral_protein_blast`), `Foldseek` 3D homology (`--run_foldseek`), and `MAFFT` + `FastTree`/`IQ-TREE` phylogenetic placement (`--run_novel_phylogeny`).
+5. **Integrated Ranked Outputs (`novel_virus_detection/`)**: Writes descending-sorted `<sample>_novel_virus_candidates.xlsx` (with clamped column widths and contig sequences at the end), `.tsv`, promoted candidate nucleotide `.fasta` and protein `_orfs.faa`, plus supporting evidence under `novel_virus_detection/details/`.
 
 ## Storage and debugging
 

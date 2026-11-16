@@ -28,11 +28,43 @@ workflow {
     }
 
         // Check if input files exist
-    def checkPathParamList = [ params.input, params.adapters, params.taxonomy_db ]
+    def checkPathParamList = [
+        params.input,
+        params.adapters,
+        params.taxonomy_db,
+        params.host_fasta,
+        params.viral_hmm_db,
+        params.phylo_reference_faa
+    ]
     checkPathParamList.each { param -> 
         if (param) { 
             file(param, checkIfExists: true) 
         } 
+    }
+
+    if (params.deplete_host && !params.skip_host_depletion && !params.host_fasta && !params.host_bowtie2_index) {
+        error '--deplete_host requires --host_fasta or --host_bowtie2_index.'
+    }
+    if (params.run_genomad && !params.skip_viral_analysis && !params.genomad_db) {
+        error '--run_genomad requires --genomad_db <path_to_genomad_db>.'
+    }
+    if (params.run_checkv && !params.skip_viral_analysis && !params.checkv_db) {
+        error '--run_checkv requires --checkv_db <path_to_checkv_db>.'
+    }
+    if (params.run_viral_hmm && !params.skip_novel_detection && !params.viral_hmm_db) {
+        error '--run_viral_hmm requires --viral_hmm_db <path_to_hmm_file>.'
+    }
+    if (params.run_viral_protein_blast && !params.skip_novel_detection && !params.viral_protein_db) {
+        error '--run_viral_protein_blast requires --viral_protein_db <path_to_diamond_db>.'
+    }
+    if (params.run_foldseek && !params.skip_novel_detection && !params.foldseek_db) {
+        error '--run_foldseek requires --foldseek_db <path_to_foldseek_db>.'
+    }
+    if (params.run_novel_phylogeny && !params.skip_novel_detection && !params.phylo_reference_faa) {
+        error '--run_novel_phylogeny requires --phylo_reference_faa <path_to_reference_proteins.faa>.'
+    }
+    if (!(params.phylo_tool in ['fasttree', 'iqtree'])) {
+        error "Invalid --phylo_tool '${params.phylo_tool}'. Use 'fasttree' or 'iqtree'."
     }
 
     // Check mandatory parameters
@@ -101,9 +133,30 @@ def helpMSG() {
     --taxonomy_db     Existing local ETE taxonomy SQLite database (default: ~/.etetoolkit/taxa.sqlite)
     --blastx_tool     Protein search tool: diamond or blastx (default: diamond)
     --checkv_db       Path to CheckV database (required only with --run_checkv)
-    --run_checkv      Enable CheckV quality/completeness assessment (default: false; requires viral analysis)
-    --run_virfinder   Enable VirFinder classification (default: false; requires viral analysis)
+    --run_checkv      Enable CheckV assessment on unassigned/divergent contigs (default: false)
+    --run_virfinder   Enable enhanced VirFinder (FDR q-value + entropy QC) on unassigned contigs (default: false)
+    --run_genomad     Enable geNomad marker + neural virus/plasmid classifier (default: false; requires --genomad_db)
+    --genomad_db      Path to geNomad database
     --organize_contigs Enable contig organization using selected BLAST results (default: false)
+
+    Opt-in Novel Virus Discovery options (disabled by default for targeted runs):
+    --discover_novel_viruses  Enable automated post-BLAST novel virus triage, ORF/DTR/EVE scan & XLSX/TSV report
+    --discovery_all_contigs   Run discovery/viral classifiers on all contigs instead of skipping confident BLAST hits
+    --novel_min_contig_length Minimum contig length (bp) for novel virus discovery (default: 500)
+    --known_virus_identity    BLAST % identity threshold to skip already-known viruses (default: 80.0)
+    --known_virus_coverage    BLAST % union coverage threshold to skip already-known viruses (default: 50.0)
+    --deplete_host            Subtract host reads prior to assembly (requires --host_fasta or --host_bowtie2_index)
+    --host_fasta              Host reference FASTA for pre-assembly depletion
+    --host_bowtie2_index      Pre-built Bowtie2 index prefix for host depletion
+    --run_viral_hmm           Scan candidate ORFs against viral hallmark HMMs (requires --viral_hmm_db)
+    --viral_hmm_db            Path to HMMER profile database (e.g. NeoRdRp, RdRp-scan, RVDB-hmm, VOGDB)
+    --run_viral_protein_blast Run ultra-sensitive DIAMOND blastp on candidate ORFs (requires --viral_protein_db)
+    --viral_protein_db        Path to curated viral protein DIAMOND database (e.g. RVDB or RefSeq Viral Protein)
+    --run_foldseek            Run Foldseek 3D structural homology search on candidate ORFs (requires --foldseek_db)
+    --foldseek_db             Path to Foldseek target database (and optional --foldseek_prostt5_weights)
+    --run_novel_phylogeny     Align promoted novel ORFs with --phylo_reference_faa via MAFFT + FastTree/IQ-TREE
+    --phylo_reference_faa     Reference protein FASTA for phylogenetic placement
+    --phylo_tool              Phylogenetic inference tool: 'fasttree' (default) or 'iqtree'
     --min_contig_length Minimum contig length for assembly (default: 200)
     --quality         Quality threshold for trimming (default: 30)
     --profile         Nextflow profile to use (default: 'slurm')

@@ -229,28 +229,31 @@ def sanitize_excel_text(value, is_sequence=False):
     return text[:EXCEL_MAX_CHARS - 3] + '...'
 
 
-def typed_excel_value(col, raw_value):
+def typed_excel_value(col, raw_value, int_cols=INT_COLUMNS, pct_cols=PCT_COLUMNS,
+                      score_cols=SCORE_COLUMNS, evalue_cols=EVALUE_COLUMNS):
     if raw_value == '' or raw_value is None:
         return '', 'text'
-    if col in INT_COLUMNS or col == 'query_frame':
+    if col in int_cols or col == 'query_frame':
         return int(raw_value), 'int'
-    if col in PCT_COLUMNS:
+    if col in pct_cols:
         return float(raw_value), 'pct'
-    if col in SCORE_COLUMNS:
+    if col in score_cols:
         return float(raw_value), 'score'
-    if col in EVALUE_COLUMNS:
+    if col in evalue_cols:
         return float(raw_value), 'evalue'
     if col == 'sequence':
         return sanitize_excel_text(raw_value, is_sequence=True), 'seq'
     return sanitize_excel_text(raw_value), 'text'
 
 
-def compute_column_widths(columns, rows):
+def compute_column_widths(columns, rows, int_cols=INT_COLUMNS, pct_cols=PCT_COLUMNS,
+                          score_cols=SCORE_COLUMNS, evalue_cols=EVALUE_COLUMNS,
+                          width_limits=WIDTH_LIMITS):
     widths = {}
     for col in columns:
         # Leave room for bold header text plus the AutoFilter dropdown arrow.
         header_width = math.ceil(len(col) * 1.12) + 5
-        min_w, max_w = WIDTH_LIMITS.get(col, (max(11, header_width), max(22, header_width)))
+        min_w, max_w = width_limits.get(col, (max(11, header_width), max(24, header_width)))
         if col == 'sequence':
             widths[col] = min_w
             continue
@@ -259,13 +262,13 @@ def compute_column_widths(columns, rows):
             val = row.get(col, '')
             if val == '' or val is None:
                 continue
-            if col in INT_COLUMNS or col == 'query_frame':
+            if col in int_cols or col == 'query_frame':
                 disp = len(f'{int(val):,}')
-            elif col in PCT_COLUMNS:
+            elif col in pct_cols:
                 disp = len(f'{float(val):.2f}')
-            elif col in SCORE_COLUMNS:
+            elif col in score_cols:
                 disp = len(f'{float(val):.1f}')
-            elif col in EVALUE_COLUMNS:
+            elif col in evalue_cols:
                 fval = float(val)
                 disp = 1 if fval == 0 else len(f'{fval:.2E}')
             else:
@@ -276,7 +279,7 @@ def compute_column_widths(columns, rows):
     return widths
 
 
-def _write_xlsx_openpyxl(output_path, columns, rows, widths, sheet_title):
+def _write_xlsx_openpyxl(output_path, columns, rows, widths, sheet_title, type_kwargs):
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
@@ -313,7 +316,7 @@ def _write_xlsx_openpyxl(output_path, columns, rows, widths, sheet_title):
     for row_idx, row in enumerate(rows, 2):
         ws.row_dimensions[row_idx].height = 18
         for col_idx, col in enumerate(columns, 1):
-            val, kind = typed_excel_value(col, row.get(col, ''))
+            val, kind = typed_excel_value(col, row.get(col, ''), **type_kwargs)
             cell = ws.cell(row=row_idx, column=col_idx)
             if kind in ('text', 'seq') and isinstance(val, str) and val.startswith(('=', '+', '-', '@')):
                 cell.value = val
@@ -334,7 +337,7 @@ def _write_xlsx_openpyxl(output_path, columns, rows, widths, sheet_title):
     wb.save(output_path)
 
 
-def _write_xlsx_stdlib(output_path, columns, rows, widths, sheet_title):
+def _write_xlsx_stdlib(output_path, columns, rows, widths, sheet_title, type_kwargs):
     style_index = {'text': 0, 'header': 1, 'int': 2, 'pct': 3, 'score': 4, 'evalue': 5, 'seq': 6}
     last_col = excel_col_letter(len(columns))
     last_row = max(1, len(rows) + 1)
@@ -356,7 +359,7 @@ def _write_xlsx_stdlib(output_path, columns, rows, widths, sheet_title):
         cells = []
         for col_idx, col in enumerate(columns, 1):
             ref = f'{excel_col_letter(col_idx)}{row_idx}'
-            val, kind = typed_excel_value(col, row.get(col, ''))
+            val, kind = typed_excel_value(col, row.get(col, ''), **type_kwargs)
             s_idx = style_index[kind]
             if val == '':
                 cells.append(f'<c r="{ref}" s="{s_idx}"/>')
@@ -465,16 +468,30 @@ def _write_xlsx_stdlib(output_path, columns, rows, widths, sheet_title):
         archive.writestr('xl/worksheets/sheet1.xml', sheet_xml)
 
 
-def write_best_hits_xlsx(output_path, rows, suffix, force_stdlib=False):
-    widths = compute_column_widths(BEST_COLUMNS, rows)
-    sheet_title = f'best_hits_{suffix}'
+def write_formatted_xlsx(output_path, columns, rows, sheet_title, int_cols=INT_COLUMNS,
+                         pct_cols=PCT_COLUMNS, score_cols=SCORE_COLUMNS,
+                         evalue_cols=EVALUE_COLUMNS, width_limits=WIDTH_LIMITS,
+                         force_stdlib=False):
+    safe_title = re.sub(r'[\\/*?:\[\]]+', '_', str(sheet_title)).strip('_')[:31] or 'Results'
+    type_kwargs = {
+        'int_cols': int_cols,
+        'pct_cols': pct_cols,
+        'score_cols': score_cols,
+        'evalue_cols': evalue_cols,
+    }
+    widths = compute_column_widths(columns, rows, width_limits=width_limits, **type_kwargs)
     if not force_stdlib:
         try:
-            _write_xlsx_openpyxl(output_path, BEST_COLUMNS, rows, widths, sheet_title)
+            _write_xlsx_openpyxl(output_path, columns, rows, widths, safe_title, type_kwargs)
             return
         except ImportError:
             pass
-    _write_xlsx_stdlib(output_path, BEST_COLUMNS, rows, widths, sheet_title)
+    _write_xlsx_stdlib(output_path, columns, rows, widths, safe_title, type_kwargs)
+
+
+def write_best_hits_xlsx(output_path, rows, suffix, force_stdlib=False):
+    write_formatted_xlsx(output_path, BEST_COLUMNS, rows, f'best_hits_{suffix}',
+                         force_stdlib=force_stdlib)
 
 
 def process_blast_results(blast_file, fasta_file, prefix, suffix, query_coverage_type='qcovs',
