@@ -34,6 +34,14 @@ class SetupDatabasesTests(unittest.TestCase):
 
     def test_preset_and_component_dependency_resolution(self):
         self.assertEqual(
+            setup_db.resolve_selected_components('full_viral', None),
+            ['taxonomy', 'refseq_viral_blastn', 'refseq_viral_protein', 'vog_hmm', 'kraken2_viral', 'checkv', 'genomad'],
+        )
+        self.assertEqual(
+            setup_db.resolve_selected_components('genbank_complete', None),
+            ['taxonomy', 'nt_viruses', 'refseq_viral_protein', 'vog_hmm', 'kraken2_viral', 'checkv', 'genomad'],
+        )
+        self.assertEqual(
             setup_db.resolve_selected_components('discovery_only', None),
             ['taxonomy', 'refseq_viral_protein', 'vog_hmm'],
         )
@@ -102,10 +110,11 @@ class SetupDatabasesTests(unittest.TestCase):
     def test_cli_dry_run_exits_cleanly_without_network(self):
         proc = subprocess.run(
             [sys.executable, str(ROOT / 'scripts/setup_databases.py'),
-             '--db-dir', str(self.base / 'planned_dbs'), '--preset', 'minimal', '--dry-run'],
+             '--db-dir', str(self.base / 'planned_dbs'), '--dry-run'],
             capture_output=True, text=True, check=True,
         )
-        self.assertIn('refseq_viral_protein', proc.stdout)
+        self.assertIn('checkv', proc.stdout)
+        self.assertIn('genomad', proc.stdout)
         self.assertIn('Dry run only', proc.stdout)
         self.assertFalse((self.base / 'planned_dbs').exists())
 

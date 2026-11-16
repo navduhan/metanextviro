@@ -25,6 +25,8 @@ VOG_BASE_URLS = [
 ]
 KRAKEN2_BUCKET_LIST_URL = 'https://genome-idx.s3.amazonaws.com/?prefix=kraken/k2_viral_'
 KRAKEN2_FALLBACK_URL = 'https://genome-idx.s3.amazonaws.com/kraken/k2_viral_20240605.tar.gz'
+CHECKV_ZENODO_URL = 'https://zenodo.org/records/15949601/files/checkv-db-v1.5.tar.gz?download=1'
+GENOMAD_ZENODO_URL = 'https://zenodo.org/records/14886553/files/genomad_db_v1.9.tar.gz?download=1'
 
 ALL_COMPONENTS = [
     'taxonomy',
@@ -38,6 +40,15 @@ ALL_COMPONENTS = [
 ]
 
 PRESETS = {
+    'full_viral': [
+        'taxonomy',
+        'refseq_viral_blastn',
+        'refseq_viral_protein',
+        'vog_hmm',
+        'kraken2_viral',
+        'checkv',
+        'genomad',
+    ],
     'minimal': [
         'taxonomy',
         'refseq_viral_blastn',
@@ -50,9 +61,9 @@ PRESETS = {
         'refseq_viral_protein',
         'vog_hmm',
     ],
-    'full_viral': [
+    'genbank_complete': [
         'taxonomy',
-        'refseq_viral_blastn',
+        'nt_viruses',
         'refseq_viral_protein',
         'vog_hmm',
         'kraken2_viral',
@@ -95,12 +106,12 @@ COMPONENT_INFO = {
     'checkv': {
         'approx_size': '~1.5 GB download',
         'description': 'CheckV viral genome completeness & contamination database',
-        'required_bins': ['checkv'],
+        'required_bins': [],
     },
     'genomad': {
         'approx_size': '~1.4 GB download',
         'description': 'geNomad marker + neural network virus/plasmid database',
-        'required_bins': ['genomad'],
+        'required_bins': [],
     },
 }
 
@@ -503,7 +514,22 @@ def setup_checkv(db_dir, force=False):
         print('[checkv] Already downloaded; skipping.')
         return next(out_dir.rglob('checkv_reps.dmnd')).parent.parent
     out_dir.mkdir(parents=True, exist_ok=True)
-    run_cmd(['checkv', 'download_database', out_dir])
+    if shutil.which('checkv'):
+        try:
+            run_cmd(['checkv', 'download_database', out_dir])
+            dmnd = next(out_dir.rglob('checkv_reps.dmnd'), None)
+            if dmnd:
+                return dmnd.parent.parent
+        except Exception as exc:
+            print(f'  [warn] checkv CLI download failed ({exc}); falling back to Zenodo HTTPS mirror...')
+
+    tar_path = download_file(CHECKV_ZENODO_URL, out_dir / 'checkv-db-v1.5.tar.gz')
+    with tarfile.open(tar_path, 'r:gz') as tar:
+        tar.extractall(path=out_dir)
+    faa = next(out_dir.rglob('checkv_reps.faa'), None)
+    dmnd = next(out_dir.rglob('checkv_reps.dmnd'), None)
+    if faa and not dmnd and shutil.which('diamond'):
+        run_cmd(['diamond', 'makedb', '--in', faa, '--db', faa.with_suffix('')])
     dmnd = next(out_dir.rglob('checkv_reps.dmnd'), None)
     return dmnd.parent.parent if dmnd else out_dir
 
@@ -515,7 +541,18 @@ def setup_genomad(db_dir, force=False):
         print('[genomad] Already downloaded; skipping.')
         return existing
     out_dir.mkdir(parents=True, exist_ok=True)
-    run_cmd(['genomad', 'download-database', out_dir])
+    if shutil.which('genomad'):
+        try:
+            run_cmd(['genomad', 'download-database', out_dir])
+            found = next(out_dir.glob('genomad_db*'), None)
+            if found and found.is_dir():
+                return found
+        except Exception as exc:
+            print(f'  [warn] genomad CLI download failed ({exc}); falling back to Zenodo HTTPS archive...')
+
+    tar_path = download_file(GENOMAD_ZENODO_URL, out_dir / 'genomad_db_v1.9.tar.gz')
+    with tarfile.open(tar_path, 'r:gz') as tar:
+        tar.extractall(path=out_dir)
     return next(out_dir.glob('genomad_db*'), out_dir / 'genomad_db')
 
 
@@ -585,8 +622,8 @@ def main():
         help='Target directory where databases and databases.config will be stored'
     )
     parser.add_argument(
-        '--preset', choices=sorted(PRESETS.keys()), default='minimal',
-        help='Database bundle preset: minimal (~1.1 GB, default), discovery_only (~375 MB), or full_viral (~4.0 GB)'
+        '--preset', choices=sorted(PRESETS.keys()), default='full_viral',
+        help='Database bundle preset: full_viral (~4.0 GB, default), minimal (~1.1 GB), discovery_only (~375 MB), or genbank_complete (~18-20 GB)'
     )
     parser.add_argument(
         '--components',

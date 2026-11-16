@@ -108,7 +108,7 @@ graph TD
 
 ### Basic Usage (No Manual Git Clone Required)
 ```bash
-# 1. One-time database setup directly through Nextflow (~1.1 GB minimal viral DBs):
+# 1. One-time database setup directly through Nextflow (~4.0 GB full viral suite by default):
 nextflow run navduhan/metanextviro \
   --setup_databases \
   --db_dir ~/.metanextviro/dbs \
@@ -322,23 +322,35 @@ nextflow run main.nf --input samplesheet.csv \
 `--skip_novel_detection` overrides `--discover_novel_viruses` and its hallmark/protein/3D/phylogeny modules;
 and `--skip_contig_organization` overrides `--organize_contigs`.
 
-## Minimal Database Download & Setup (Nextflow `--setup_databases` or Standalone)
+## Database Download & Setup Presets (Nextflow `--setup_databases` or Standalone)
 
-Databases can be downloaded and indexed **directly through Nextflow** (recommended; runs on the local submission node even under `-profile slurm` so compute nodes do not need internet access) or via `scripts/setup_databases.py`:
+Databases can be downloaded and indexed **directly through Nextflow** (runs on the local submission node even under `-profile slurm`) or via `scripts/setup_databases.py`. Select a preset with `--db_preset` (default: `full_viral`):
+
+| `--db_preset` | Approx. Size | Included Databases |
+| :--- | :--- | :--- |
+| `full_viral` *(default)* | **~4.0 GB** | `taxonomy` (`taxa.sqlite`), `refseq_viral_blastn` (viral `blastn`), `refseq_viral_protein` (`diamond` + hallmark `.faa` refs), `vog_hmm` (VOGDB HMMs + LCA taxonomy), `kraken2_viral` (`k2_viral`), **`checkv`**, and **`genomad`** |
+| `minimal` | **~1.1 GB** | `taxonomy`, `refseq_viral_blastn`, `refseq_viral_protein`, `vog_hmm`, `kraken2_viral` *(skips CheckV & geNomad)* |
+| `discovery_only` | **~375 MB** | `taxonomy`, `refseq_viral_protein`, `vog_hmm` *(add-on when Kraken2 & `nt_viruses` already exist on HPC)* |
+| `genbank_complete` | **~18–20 GB** | Everything in `full_viral`, replacing RefSeq viral `blastn` with full NCBI GenBank `nt_viruses` |
+
+You can also cherry-pick exact components with `--db_components taxonomy,refseq_viral_protein,vog_hmm,checkv`.
 
 ```bash
-# Option A: Directly via Nextflow (no --input required; uses ~/.metanextviro/dbs by default):
+# Option A: Directly via Nextflow (default preset = full_viral ~4.0 GB; no --input required):
+nextflow run navduhan/metanextviro --setup_databases -profile conda
+
+# Choose a lighter or larger preset explicitly:
 nextflow run navduhan/metanextviro --setup_databases --db_preset minimal -profile conda
+nextflow run navduhan/metanextviro --setup_databases --db_preset genbank_complete -profile conda
 
 # Option B: Single-command auto-download + analysis:
 nextflow run navduhan/metanextviro --input samplesheet.csv --auto_download_dbs -profile conda
 
 # Option C: Standalone Python helper (supports --dry-run preview):
-python scripts/setup_databases.py --db-dir ~/.metanextviro/dbs --preset minimal --dry-run
-python scripts/setup_databases.py --db-dir ~/.metanextviro/dbs --preset minimal --threads 8
+python scripts/setup_databases.py --db-dir ~/.metanextviro/dbs --dry-run
 ```
 
-Once built in `--db_dir` (default `~/.metanextviro/dbs`), Nextflow **automatically discovers** `taxonomy_db`, `blastdb_viruses`, `kraken2_db`, `viral_protein_db`, `viral_hmm_db`, `viral_hmm_taxonomy`, and `phylo_reference_faa` without needing `-c databases.config`:
+Once built in `--db_dir` (default `~/.metanextviro/dbs`), Nextflow **automatically discovers** `taxonomy_db`, `blastdb_viruses`, `kraken2_db`, `viral_protein_db`, `viral_hmm_db`, `viral_hmm_taxonomy`, `phylo_reference_faa`, `checkv_db`, and `genomad_db`:
 
 ```bash
 # Routine targeted run (fast — novel discovery stays off):

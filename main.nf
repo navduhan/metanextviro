@@ -21,8 +21,8 @@ workflow {
     if (!(params.blast_max_target_seqs.toString() ==~ /[1-9][0-9]*/)) {
         error '--blast_max_target_seqs must be a positive integer.'
     }
-    if (!(params.db_preset in ['minimal', 'discovery_only', 'full_viral'])) {
-        error "Invalid --db_preset '${params.db_preset}'. Use minimal, discovery_only, or full_viral."
+    if (!(params.db_preset in ['full_viral', 'minimal', 'discovery_only', 'genbank_complete'])) {
+        error "Invalid --db_preset '${params.db_preset}'. Use full_viral, minimal, discovery_only, or genbank_complete."
     }
     if (!(params.phylo_tool in ['fasttree', 'iqtree'])) {
         error "Invalid --phylo_tool '${params.phylo_tool}'. Use 'fasttree' or 'iqtree'."
@@ -58,9 +58,9 @@ workflow {
         }
 
         def willDownloadDbs = (params.setup_databases || params.auto_download_dbs)
-        def presetCoversFull = willDownloadDbs && params.db_preset == 'full_viral'
-        def presetCoversDiscovery = willDownloadDbs && (params.db_preset in ['minimal', 'discovery_only', 'full_viral'])
-        def presetCoversMinimal = willDownloadDbs && (params.db_preset in ['minimal', 'full_viral'])
+        def presetCoversFull = willDownloadDbs && (params.db_preset in ['full_viral', 'genbank_complete'])
+        def presetCoversDiscovery = willDownloadDbs && (params.db_preset in ['minimal', 'discovery_only', 'full_viral', 'genbank_complete'])
+        def presetCoversMinimal = willDownloadDbs && (params.db_preset in ['minimal', 'full_viral', 'genbank_complete'])
 
         if (params.deplete_host && !params.skip_host_depletion && !params.host_fasta && !params.host_bowtie2_index) {
             error '--deplete_host requires --host_fasta or --host_bowtie2_index.'
@@ -148,7 +148,7 @@ def helpMSG() {
 
     Quick Start (Direct GitHub or CLI execution):
 
-    # 1. One-time minimal database download & setup (~1.1 GB, runs via Nextflow):
+    # 1. One-time full viral database download & setup (~4.0 GB default, runs via Nextflow):
     nextflow run navduhan/metanextviro --setup_databases --db_dir ~/.metanextviro/dbs -profile conda
 
     # 2. Routine targeted virus run (auto-discovers databases from --db_dir):
@@ -160,8 +160,8 @@ def helpMSG() {
     Database Management Options:
     --db_dir            Directory for managed databases (default: ~/.metanextviro/dbs)
     --setup_databases   Download and build reference databases in --db_dir (can run standalone without --input)
-    --auto_download_dbs Automatically build missing minimal databases in --db_dir before running analysis
-    --db_preset         Database bundle: 'minimal' (~1.1 GB, default), 'discovery_only' (~375 MB), 'full_viral' (~4 GB)
+    --auto_download_dbs Automatically build missing databases in --db_dir before running analysis
+    --db_preset         Database bundle: 'full_viral' (~4 GB, default), 'minimal' (~1.1 GB), 'discovery_only' (~375 MB), 'genbank_complete' (~18-20 GB)
     --db_components     Optional comma-separated component list overriding --db_preset
     --db_force          Force rebuilding databases even if already present
 
