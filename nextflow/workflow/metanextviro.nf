@@ -117,6 +117,7 @@ workflow metanextviro {
         // Automated post-BLAST triage: skip contigs already confidently identified by BLAST
         def run_novel_workflow = !params.skip_novel_detection && (
             params.discover_novel_viruses ||
+            (params.run_virfinder && params.annotate_virfinder_taxonomy) ||
             params.run_viral_hmm ||
             params.run_viral_protein_blast ||
             params.run_foldseek ||

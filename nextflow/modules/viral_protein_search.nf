@@ -1,4 +1,4 @@
-// Optional ultra-sensitive DIAMOND protein search against curated viral protein DB (e.g. RVDB)
+// Optional ultra-sensitive DIAMOND protein search against curated viral protein DB with NCBI taxonomy
 process viral_protein_search {
     tag "$id"
     label 'medium'
@@ -13,6 +13,7 @@ process viral_protein_search {
         tuple val(id), path("${id}_raw_viral_protein.txt"), emit: raw_vp
 
     script:
+    def taxArg = params.taxonomy_db ? "--taxonomy_db '" + file(params.taxonomy_db).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
     """
     set -euo pipefail
 
@@ -23,7 +24,7 @@ process viral_protein_search {
             --db ${params.viral_protein_db} \
             --evalue ${params.viral_protein_evalue} \
             --max-target-seqs 10 \
-            --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovhsp evalue bitscore qlen slen stitle \
+            --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send qcovhsp evalue bitscore qlen slen stitle staxids \
             --threads ${task.cpus} \
             --out ${id}_raw_viral_protein.txt
     else
@@ -33,6 +34,7 @@ process viral_protein_search {
     python3 ${workflow.projectDir}/nextflow/bin/parse_discovery_hits.py \
         --mode viral_protein \
         -i ${id}_raw_viral_protein.txt \
-        -o ${id}_viral_protein_hits.tsv
+        -o ${id}_viral_protein_hits.tsv \
+        ${taxArg}
     """
 }

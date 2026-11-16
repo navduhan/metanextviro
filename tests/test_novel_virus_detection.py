@@ -158,8 +158,9 @@ class NovelDiscoveryTests(unittest.TestCase):
             for i in range(220)
         )
         contigs = {
-            'cand_rdrp': make_coding_seq(300, dtr_len=25, seed=1),   # High-confidence novel RNA virus
-            'cand_vf': make_coding_seq(220, itr_len=24, seed=2),     # Moderate-confidence candidate
+            'cand_vf': make_coding_seq(220, itr_len=24, seed=2),     # High-confidence (VF + 2-ORF Picornavirales LCA)
+            'cand_rdrp': make_coding_seq(300, dtr_len=25, seed=1),   # High-confidence (VOG RdRp HMM)
+            'cand_vf_only': make_coding_seq(170, seed=5),            # Moderate-confidence (VF k-mer only, no homolog)
             'cand_eve': make_coding_seq(200, seed=3),                # Host-flanked EVE/provirus
             'cand_dark': dark_noncoding,                             # Unconfirmed dark matter
             'cand_plasmid': make_coding_seq(190, seed=4),            # geNomad plasmid
@@ -177,25 +178,56 @@ class NovelDiscoveryTests(unittest.TestCase):
             'Contig\tAverage_Coverage\tTotal_Reads\tCovered_Bases\tCoverage_Breadth\n'
             f'cand_rdrp\t120.5\t2400\t{len(contigs["cand_rdrp"])}\t99.5\n'
             f'cand_vf\t35.2\t600\t{len(contigs["cand_vf"])}\t94.0\n'
+            f'cand_vf_only\t20.0\t300\t{len(contigs["cand_vf_only"])}\t91.0\n'
             f'cand_eve\t18.0\t200\t400\t33.0\n'
             f'cand_plasmid\t50.0\t800\t{len(contigs["cand_plasmid"])}\t98.0\n'
             f'cand_dark\t5.0\t50\t600\t90.0\n'
         )
 
-        # HMM domtblout fixture for cand_rdrp_orf1
+        # HMM domtblout fixture for cand_rdrp_orf1 + VOG LCA taxonomy lookup
         domtbl = self.base / 'domtbl.txt'
         domtbl.write_text(
-            'cand_rdrp_orf1 - 602 Orthornavirae_RdRp PF00680 450 1.2e-42 148.5 0.1 '
+            'cand_rdrp_orf1 - 602 VOG00500 PF00680 450 1.2e-42 148.5 0.1 '
             '1 1 2.0e-45 2.5e-42 147.9 0.1 10 430 50 470 48 475 0.96 RNA-dependent RNA polymerase\n'
         )
+        hmm_tax = self.base / 'vog_tax.tsv'
+        hmm_tax.write_text(
+            'hmm_name\tfunctional_category\tdescription\tlca_lineage\n'
+            'VOG00500\tXr\tRNA-dependent RNA polymerase\tViruses;Riboviria;Orthornavirae;Pisuviricota;Pisoniviricetes;Picornavirales\n'
+        )
         hmm_tsv = self.base / 'hmm.tsv'
-        parsers.parse_hmmer_domtblout(domtbl, hmm_tsv)
+        parsers.parse_hmmer_domtblout(domtbl, hmm_tsv, hmm_taxonomy_path=hmm_tax)
+
+        # Multi-ORF viral protein table for cand_vf (two ORFs agreeing on Order Picornavirales, differing on Family)
+        vp_tsv = self.base / 'vp.tsv'
+        with open(vp_tsv, 'w', newline='') as vp_out:
+            writer = csv.DictWriter(vp_out, fieldnames=parsers.VP_COLUMNS, delimiter='\t')
+            writer.writeheader()
+            writer.writerow({
+                'query_id': 'cand_vf', 'orf_id': 'cand_vf_orf1', 'subject_id': 'YP_1',
+                'percent_identity': 38.0, 'alignment_length': 200, 'orf_coverage_pct': 85.0,
+                'evalue': 1e-30, 'bit_score': 180.0, 'orf_length_aa': 220, 'subject_length': 230,
+                'tax_id': '1', 'kingdom': 'Orthornavirae', 'phylum': 'Pisuviricota',
+                'class': 'Pisoniviricetes', 'order': 'Picornavirales', 'family': 'Picornaviridae',
+                'genus': 'Enterovirus', 'species': 'Enterovirus A', 'taxonomy_status': 'resolved',
+                'subject_title': 'capsid [Enterovirus A]',
+            })
+            writer.writerow({
+                'query_id': 'cand_vf', 'orf_id': 'cand_vf_orf2', 'subject_id': 'YP_2',
+                'percent_identity': 34.0, 'alignment_length': 190, 'orf_coverage_pct': 80.0,
+                'evalue': 1e-25, 'bit_score': 160.0, 'orf_length_aa': 210, 'subject_length': 220,
+                'tax_id': '2', 'kingdom': 'Orthornavirae', 'phylum': 'Pisuviricota',
+                'class': 'Pisoniviricetes', 'order': 'Picornavirales', 'family': 'Dicistroviridae',
+                'genus': 'Cripavirus', 'species': 'Cricket paralysis virus', 'taxonomy_status': 'resolved',
+                'subject_title': 'helicase [Cricket paralysis virus]',
+            })
 
         # VirFinder table
         vf_tsv = self.base / 'vf.tsv'
         vf_tsv.write_text(
             'name\tlength\tscore\tpvalue\tqvalue\tgc_percent\tn_fraction\tkmer_entropy\tlow_complexity_flag\tconfidence_tier\n'
-            f'cand_vf\t{len(contigs["cand_vf"])}\t0.94\t0.001\t0.01\t50.0\t0.0\t0.88\tno\thigh_confidence\n'
+            f'cand_vf\t{len(contigs["cand_vf"])}\t0.96\t0.0005\t0.005\t50.0\t0.0\t0.88\tno\thigh_confidence\n'
+            f'cand_vf_only\t{len(contigs["cand_vf_only"])}\t0.91\t0.004\t0.02\t49.0\t0.0\t0.86\tno\thigh_confidence\n'
         )
 
         # CheckV summary flagging host genes on cand_eve
@@ -211,6 +243,7 @@ class NovelDiscoveryTests(unittest.TestCase):
         gm_plas = self.base / 'gm_plas.tsv'
         gm_plas.write_text('seq_name\tplasmid_score\n' 'cand_plasmid\t0.92\n')
 
+        vf_tax_prefix = str(self.base / 'virfinder_sample_taxonomy')
         synth.synthesize_novel_viruses(
             contigs_fasta=fasta,
             candidate_orfs=self.base / 'sample_candidate_orfs.faa',
@@ -223,17 +256,36 @@ class NovelDiscoveryTests(unittest.TestCase):
             genomad_virus_tsv=gm_vir,
             genomad_plasmid_tsv=gm_plas,
             hmm_tsv=hmm_tsv,
+            viral_protein_tsv=vp_tsv,
+            virfinder_tax_prefix=vf_tax_prefix,
         )
 
         rows = read_table(self.base / 'sample_novel_virus_candidates.tsv')
         self.assertEqual(
             [r['query_id'] for r in rows],
-            ['cand_rdrp', 'cand_vf', 'cand_eve', 'cand_dark', 'cand_plasmid'],
+            ['cand_vf', 'cand_rdrp', 'cand_vf_only', 'cand_eve', 'cand_dark', 'cand_plasmid'],
         )
         by_id = {r['query_id']: r for r in rows}
         self.assertEqual(by_id['cand_rdrp']['discovery_classification'], 'putative_novel_virus_high_confidence')
         self.assertEqual(by_id['cand_rdrp']['hallmark_category'], 'RdRp')
-        self.assertEqual(by_id['cand_vf']['discovery_classification'], 'putative_novel_virus_moderate_confidence')
+        self.assertEqual(by_id['cand_rdrp']['putative_order'], 'Picornavirales')
+        self.assertEqual(by_id['cand_rdrp']['putative_kingdom'], 'Orthornavirae')
+
+        # Two ORFs disagree at Family (53% vs 47% bitscore < 60% threshold), so LCA resolves cleanly to Order = Picornavirales!
+        self.assertEqual(by_id['cand_vf']['discovery_classification'], 'putative_novel_virus_high_confidence')
+        self.assertEqual(by_id['cand_vf']['putative_order'], 'Picornavirales')
+        self.assertEqual(by_id['cand_vf']['putative_family'], '')
+        self.assertEqual(by_id['cand_vf']['taxonomy_evidence_source'], 'viral_protein_lca(2_orfs)')
+
+        self.assertEqual(by_id['cand_vf_only']['discovery_classification'], 'putative_novel_virus_moderate_confidence')
+        self.assertEqual(by_id['cand_vf_only']['taxonomy_evidence_source'], 'none_kmer_or_architecture_only')
+
+        # VirFinder taxonomy table assigns Order Picornavirales directly alongside VirFinder score!
+        vf_tax_rows = read_table(self.base / 'virfinder_sample_taxonomy.tsv')
+        self.assertEqual([r['query_id'] for r in vf_tax_rows], ['cand_vf', 'cand_vf_only'])
+        self.assertEqual(vf_tax_rows[0]['putative_order'], 'Picornavirales')
+        self.assertTrue((self.base / 'virfinder_sample_taxonomy.xlsx').is_file())
+
         self.assertEqual(by_id['cand_eve']['discovery_classification'], 'possible_eve_or_provirus_needs_review')
         self.assertEqual(by_id['cand_dark']['discovery_classification'], 'unconfirmed_dark_matter')
         self.assertEqual(by_id['cand_plasmid']['discovery_classification'], 'plasmid_or_low_complexity_artifact')
@@ -241,7 +293,7 @@ class NovelDiscoveryTests(unittest.TestCase):
         # Only high and moderate confidence novel candidates are promoted to FASTA/ORF outputs
         with open(self.base / 'sample_novel_virus_candidates.fasta') as nt_handle:
             promoted_nt = [rec.id for rec in SeqIO.parse(nt_handle, 'fasta')]
-        self.assertEqual(promoted_nt, ['cand_rdrp', 'cand_vf'])
+        self.assertEqual(promoted_nt, ['cand_vf', 'cand_rdrp', 'cand_vf_only'])
         with open(self.base / 'sample_novel_virus_orfs.faa') as aa_handle:
             promoted_aa = [rec.id for rec in SeqIO.parse(aa_handle, 'fasta')]
         self.assertTrue(any(i.startswith('cand_rdrp_orf') for i in promoted_aa))

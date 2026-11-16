@@ -70,7 +70,13 @@ process SYNTHESIZE_NOVEL_VIRUSES {
     publishDir "${params.outdir}/novel_virus_detection",
         mode: params.publish_mode,
         overwrite: true,
-        failOnError: true
+        failOnError: true,
+        pattern: '*_novel_*'
+    publishDir "${params.outdir}/virfinder",
+        mode: params.publish_mode,
+        overwrite: true,
+        failOnError: true,
+        pattern: 'virfinder_*_taxonomy.*'
 
     input:
         tuple val(id), path(contigs_fasta), path(triage_manifest), val(evidence_keys), path(evidence_files)
@@ -81,6 +87,7 @@ process SYNTHESIZE_NOVEL_VIRUSES {
         tuple val(id), path("${id}_novel_virus_candidates.fasta"), emit: candidates_fasta
         tuple val(id), path("${id}_novel_virus_orfs.faa"), emit: candidates_orfs
         tuple val(id), path("${id}_novel_discovery_summary.txt"), emit: summary
+        tuple val(id), path("virfinder_${id}_taxonomy.*"), optional: true, emit: virfinder_taxonomy
 
     script:
     def fileList = evidence_files instanceof List ? evidence_files : [evidence_files]
@@ -100,6 +107,7 @@ process SYNTHESIZE_NOVEL_VIRUSES {
         .findAll { pair -> evMap.containsKey(pair[0]) }
         .collect { pair -> "${pair[1]} '${evMap[pair[0]]}'" }
         .join(' ')
+    def vfTaxArg = evMap.containsKey('virfinder') ? "--virfinder_tax_prefix 'virfinder_${id}_taxonomy'" : ''
     """
     python3 ${workflow.projectDir}/nextflow/bin/synthesize_novel_viruses.py \
         --contigs_fasta '${contigs_fasta}' \
@@ -107,7 +115,8 @@ process SYNTHESIZE_NOVEL_VIRUSES {
         --triage_manifest '${triage_manifest}' \
         --architecture '${evMap['arch']}' \
         --prefix '${id}' \
-        ${optionalArgs}
+        ${optionalArgs} \
+        ${vfTaxArg}
     """
 }
 
@@ -149,11 +158,14 @@ workflow NOVEL_VIRUS_DETECTION {
 
         SCAN_VIRAL_ARCHITECTURE(candidate_contigs_ch)
 
-        if (params.run_viral_hmm) {
+        def enable_hmm = params.run_viral_hmm || (params.viral_hmm_db && (params.discover_novel_viruses || params.run_virfinder))
+        def enable_vp = params.run_viral_protein_blast || (params.viral_protein_db && (params.discover_novel_viruses || params.run_virfinder))
+
+        if (enable_hmm) {
             viral_hmm(SCAN_VIRAL_ARCHITECTURE.out.orfs)
             ch_hmm_hits = viral_hmm.out.hmm_hits
         }
-        if (params.run_viral_protein_blast) {
+        if (enable_vp) {
             viral_protein_search(SCAN_VIRAL_ARCHITECTURE.out.orfs)
             ch_vp_hits = viral_protein_search.out.vp_hits
         }

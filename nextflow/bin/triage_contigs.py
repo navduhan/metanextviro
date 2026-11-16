@@ -15,8 +15,10 @@ from process_blast_results import hit_order, merge_intervals  # noqa: E402
 
 TRIAGE_COLUMNS = [
     'query_id', 'contig_length', 'triage_category', 'triage_reason', 'send_to_discovery',
-    'best_viral_database', 'best_viral_subject', 'best_viral_title', 'best_viral_family',
-    'best_viral_species', 'best_viral_identity', 'best_viral_union_coverage',
+    'best_viral_database', 'best_viral_subject', 'best_viral_title',
+    'best_viral_kingdom', 'best_viral_phylum', 'best_viral_class',
+    'best_viral_order', 'best_viral_family', 'best_viral_genus', 'best_viral_species',
+    'best_viral_identity', 'best_viral_union_coverage',
     'best_viral_bit_score', 'best_viral_evalue', 'best_cellular_superkingdom',
     'best_cellular_identity', 'best_cellular_union_coverage'
 ]
@@ -40,18 +42,15 @@ def summarize_blast_for_triage(blast_files):
                     'cellular_intervals': [],
                     'best_cellular': None,
                     'any_hit': False,
-                    'unresolved_only': True,
                 })
                 entry['any_hit'] = True
                 if superkingdom == 'Viruses':
-                    entry['unresolved_only'] = False
                     key = (row.get('search_database', ''), row['subject_id'])
                     subj = entry['viral_subjects'].setdefault(key, {'best': row, 'intervals': []})
                     subj['intervals'].append((start, end))
                     if hit_order(row) < hit_order(subj['best']):
                         subj['best'] = row
                 elif superkingdom in ('Bacteria', 'Archaea', 'Eukaryota'):
-                    entry['unresolved_only'] = False
                     entry['cellular_intervals'].append((start, end))
                     if entry['best_cellular'] is None or hit_order(row) < hit_order(entry['best_cellular']):
                         entry['best_cellular'] = row
@@ -155,7 +154,12 @@ def triage_contigs(fasta_file, blast_files, prefix, min_candidate_length=500,
             'best_viral_database': best_v.get('search_database', '') if best_v else '',
             'best_viral_subject': best_v['subject_id'] if best_v else '',
             'best_viral_title': best_v['subject_title'] if best_v else '',
+            'best_viral_kingdom': best_v.get('kingdom', '') if best_v else '',
+            'best_viral_phylum': best_v.get('phylum', '') if best_v else '',
+            'best_viral_class': best_v.get('class', '') if best_v else '',
+            'best_viral_order': best_v.get('order', '') if best_v else '',
             'best_viral_family': best_v.get('family', '') if best_v else '',
+            'best_viral_genus': best_v.get('genus', '') if best_v else '',
             'best_viral_species': best_v.get('species', '') if best_v else '',
             'best_viral_identity': round(v_pident, 2) if best_v else '',
             'best_viral_union_coverage': v_cov if best_v else '',

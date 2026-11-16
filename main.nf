@@ -34,6 +34,7 @@ workflow {
         params.taxonomy_db,
         params.host_fasta,
         params.viral_hmm_db,
+        params.viral_hmm_taxonomy,
         params.phylo_reference_faa
     ]
     checkPathParamList.each { param -> 

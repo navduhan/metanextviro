@@ -309,16 +309,48 @@ nextflow run main.nf --input samplesheet.csv \
 `--skip_novel_detection` overrides `--discover_novel_viruses` and its hallmark/protein/3D/phylogeny modules;
 and `--skip_contig_organization` overrides `--organize_contigs`.
 
-## Opt-in Automated Novel Virus Discovery
+## Minimal Database Download & Setup (`scripts/setup_databases.py`)
+
+Use `scripts/setup_databases.py` to download, verify, and build a compact reference
+database suite and generate a ready-to-use Nextflow `databases.config`:
+
+```bash
+# Preview planned downloads and sizes without downloading anything:
+python scripts/setup_databases.py --db-dir ./metanextviro_dbs --preset minimal --dry-run
+
+# 1. Minimal complete suite (~1.1 GB download: ETE3 taxonomy, RefSeq viral BLASTN,
+#    RefSeq viral protein DIAMOND DB with taxids, VOGDB HMMs + LCA taxonomy, Kraken2 viral):
+python scripts/setup_databases.py --db-dir ./metanextviro_dbs --preset minimal --threads 8
+
+# 2. Discovery-only add-on (~375 MB download) when Kraken2 and nt_viruses already exist on HPC:
+python scripts/setup_databases.py --db-dir ./metanextviro_dbs --preset discovery_only --threads 8
+
+# 3. Full viral suite (~4.0 GB download; adds CheckV and geNomad databases):
+python scripts/setup_databases.py --db-dir ./metanextviro_dbs --preset full_viral --threads 8
+```
+
+Pass the generated `databases.config` to Nextflow:
+
+```bash
+# Routine targeted run (fast — novel discovery stays off):
+nextflow run main.nf -c ./metanextviro_dbs/databases.config --input samplesheet.csv
+
+# VirFinder + Novel Virus Discovery (automatically assigns putative Order/Family/Kingdom!):
+nextflow run main.nf -c ./metanextviro_dbs/databases.config --input samplesheet.csv --discover_novel_viruses --run_virfinder
+```
+
+## Opt-in Automated Novel Virus Discovery & Putative Order/Family Assignment
 
 All novel-virus discovery steps are **disabled by default** so routine targeted surveillance runs stay fast.
-When `--discover_novel_viruses` (or `--run_virfinder` / `--run_checkv` / `--run_genomad`) is enabled:
+When `--discover_novel_viruses` or `--run_virfinder` (or `--run_checkv` / `--run_genomad`) is enabled:
 
 1. **Automated Post-BLAST Contig Triage (`triage_contigs.py`)**: Evaluates all BLAST alignments first and skips contigs already confidently identified as known viruses (`≥ 80%` identity and `≥ 50%` union coverage by default) or cellular/host sequences, forwarding only unassigned, divergent, or ambiguous contigs (`≥ 500 bp`) to downstream discovery tools (override with `--discovery_all_contigs`).
 2. **Intrinsic Genome Architecture & EVE/Repeat Screening (`scan_viral_architecture.py`)**: Predicts 6-frame viral ORFs, coding density, Direct/Inverted Terminal Repeats (`DTR`/`ITR`), 3-mer Shannon entropy low-complexity flags, and stop-codon fragmentation warnings for Endogenous Viral Elements (EVEs).
-3. **Enhanced VirFinder (`run_virfinder.R`)**: Computes Benjamini–Hochberg / `VF.qvalue` FDR *q*-values, screens out low-complexity repeat artifacts, assigns confidence tiers, handles empty candidate sets safely, and sorts results in descending score order.
+3. **Enhanced VirFinder + Automatic Order/Family Taxonomic Follow-Up (`run_virfinder.R` + `synthesize_novel_viruses.py`)**:
+   - Because `VirFinder` alone only produces an 8-mer viral score without taxonomy, enabling `--run_virfinder` automatically triggers ORF translation and protein/HMM taxonomic lookup whenever `viral_protein_db` / `viral_hmm_db` are configured (e.g., via `databases.config`), writing **`virfinder/virfinder_<sample>_taxonomy.xlsx` and `.tsv`** with each contig's putative **`kingdom`, `phylum`, `class`, `order`, `family`, and `genus`**.
+   - Putative ranks are inferred conservatively via **multi-ORF bit-score-weighted LCA** across RefSeq viral proteins (with AA-identity rank caps: `< 25%` AA capped at Order/Class, `25–65%` AA capped at Family so divergent novel genera/species are never mislabeled as known species), **geNomad ICTV marker taxonomy**, **VOGDB/RdRp profile-HMM LCA lineages**, and divergent BLAST hits.
 4. **Optional Homology & Classifier Layers**: Supports `geNomad` (`--run_genomad`, separating plasmids and proviruses), `CheckV` (`--run_checkv`), `HMMER` hallmark scans (`--run_viral_hmm` for RdRp, Capsid, Rep, Helicase, Terminase), ultra-sensitive `DIAMOND` curated viral protein search (`--run_viral_protein_blast`), `Foldseek` 3D homology (`--run_foldseek`), and `MAFFT` + `FastTree`/`IQ-TREE` phylogenetic placement (`--run_novel_phylogeny`).
-5. **Integrated Ranked Outputs (`novel_virus_detection/`)**: Writes descending-sorted `<sample>_novel_virus_candidates.xlsx` (with clamped column widths and contig sequences at the end), `.tsv`, promoted candidate nucleotide `.fasta` and protein `_orfs.faa`, plus supporting evidence under `novel_virus_detection/details/`.
+5. **Integrated Ranked Outputs (`novel_virus_detection/`)**: Writes descending-sorted `<sample>_novel_virus_candidates.xlsx` (with clamped column widths, putative Order/Family columns up front, and contig sequences at the end), `.tsv`, promoted candidate nucleotide `.fasta` and protein `_orfs.faa`, plus supporting evidence under `novel_virus_detection/details/`.
 
 ## Storage and debugging
 

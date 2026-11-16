@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Integrate multi-evidence layers to rank novel/divergent virus candidates in descending order."""
+"""Integrate multi-evidence layers and assign Order/Family taxonomy to novel & VirFinder contigs."""
 
 import argparse
 import csv
 import os
 import sys
+from collections import defaultdict
 from contextlib import closing
 from pathlib import Path
 
@@ -13,19 +14,36 @@ from Bio import SeqIO
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from process_blast_results import WIDTH_LIMITS, write_formatted_xlsx  # noqa: E402
 
+TAX_RANKS = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species']
+
 CANDIDATE_COLUMNS = [
     'query_id', 'contig_length', 'discovery_classification', 'discovery_score',
-    'evidence_sources', 'triage_reason', 'mean_read_depth', 'coverage_breadth_pct',
-    'orf_count', 'max_orf_aa', 'coding_density', 'terminal_repeat_type',
-    'terminal_repeat_length', 'hallmark_category', 'best_hmm_name', 'best_hmm_evalue',
-    'best_hmm_score', 'viral_protein_subject', 'viral_protein_title',
-    'viral_protein_identity', 'viral_protein_evalue', 'foldseek_target',
-    'foldseek_probability', 'foldseek_evalue', 'virfinder_score', 'virfinder_qvalue',
-    'virfinder_tier', 'genomad_virus_score', 'genomad_plasmid_score',
-    'genomad_taxonomy', 'checkv_quality', 'checkv_completeness', 'checkv_viral_genes',
+    'putative_kingdom', 'putative_phylum', 'putative_class', 'putative_order',
+    'putative_family', 'putative_genus', 'taxonomic_assignment_level',
+    'taxonomy_evidence_source', 'evidence_sources', 'triage_reason',
+    'mean_read_depth', 'coverage_breadth_pct', 'orf_count', 'max_orf_aa',
+    'coding_density', 'terminal_repeat_type', 'terminal_repeat_length',
+    'hallmark_category', 'best_hmm_name', 'best_hmm_evalue', 'best_hmm_score',
+    'viral_protein_subject', 'viral_protein_title', 'viral_protein_identity',
+    'viral_protein_evalue', 'foldseek_target', 'foldseek_probability',
+    'foldseek_evalue', 'virfinder_score', 'virfinder_qvalue', 'virfinder_tier',
+    'genomad_virus_score', 'genomad_plasmid_score', 'genomad_taxonomy',
+    'checkv_quality', 'checkv_completeness', 'checkv_viral_genes',
     'checkv_host_genes', 'blast_viral_subject', 'blast_viral_family',
     'blast_viral_identity', 'blast_viral_union_coverage', 'gc_percent',
     'kmer_entropy', 'low_complexity_flag', 'fragmented_orfs_flag', 'sequence'
+]
+
+VIRFINDER_TAX_COLUMNS = [
+    'query_id', 'contig_length', 'virfinder_score', 'virfinder_qvalue',
+    'virfinder_pvalue', 'virfinder_tier', 'putative_kingdom', 'putative_phylum',
+    'putative_class', 'putative_order', 'putative_family', 'putative_genus',
+    'taxonomic_assignment_level', 'taxonomy_evidence_source',
+    'discovery_classification', 'hallmark_category', 'best_hmm_name',
+    'viral_protein_subject', 'viral_protein_title', 'viral_protein_identity',
+    'viral_protein_evalue', 'mean_read_depth', 'coverage_breadth_pct',
+    'orf_count', 'max_orf_aa', 'coding_density', 'terminal_repeat_type',
+    'low_complexity_flag', 'sequence'
 ]
 
 NOVEL_INT_COLS = {
@@ -39,10 +57,21 @@ NOVEL_PCT_COLS = {
     'blast_viral_identity', 'blast_viral_union_coverage', 'gc_percent', 'kmer_entropy'
 }
 NOVEL_SCORE_COLS = {'discovery_score', 'best_hmm_score'}
-NOVEL_EVALUE_COLS = {'best_hmm_evalue', 'viral_protein_evalue', 'foldseek_evalue', 'virfinder_qvalue'}
+NOVEL_EVALUE_COLS = {
+    'best_hmm_evalue', 'viral_protein_evalue', 'foldseek_evalue',
+    'virfinder_qvalue', 'virfinder_pvalue'
+}
 NOVEL_WIDTH_LIMITS = {
     **WIDTH_LIMITS,
     'discovery_classification': (28, 38),
+    'putative_kingdom': (16, 24),
+    'putative_phylum': (16, 24),
+    'putative_class': (16, 24),
+    'putative_order': (18, 26),
+    'putative_family': (18, 28),
+    'putative_genus': (16, 26),
+    'taxonomic_assignment_level': (24, 34),
+    'taxonomy_evidence_source': (24, 38),
     'evidence_sources': (26, 48),
     'triage_reason': (22, 34),
     'viral_protein_title': (22, 44),
@@ -69,6 +98,18 @@ def read_tsv_map(path, key_col):
             if key and key not in mapping:
                 mapping[key] = row
     return mapping
+
+
+def read_tsv_grouped(path, key_col):
+    if not path or not os.path.exists(path) or os.path.getsize(path) == 0:
+        return {}
+    grouped = defaultdict(list)
+    with open(path, newline='') as handle:
+        for row in csv.DictReader(handle, delimiter='\t'):
+            key = row.get(key_col, '').strip()
+            if key:
+                grouped[key].append(row)
+    return dict(grouped)
 
 
 def safe_float(val, default=None):
@@ -112,6 +153,137 @@ def read_genomad_summaries(virus_path, plasmid_path):
                 if contig_id not in plasmids or score > safe_float(plasmids[contig_id].get('plasmid_score'), 0.0):
                     plasmids[contig_id] = row
     return viruses, plasmids, is_provirus
+
+
+def parse_genomad_lineage(tax_str):
+    """Parse geNomad 7-field ICTV lineage (Viruses;Realm;Kingdom;Phylum;Class;Order;Family)."""
+    out = {r: '' for r in TAX_RANKS[:6]}
+    if not tax_str or str(tax_str).strip() in ('', 'Unclassified'):
+        return out
+    parts = [p.strip() for p in str(tax_str).split(';')]
+    # Standard geNomad slots: 0=Viruses, 1=Realm, 2=Kingdom, 3=Phylum, 4=Class, 5=Order, 6=Family
+    slot_map = [(2, 'kingdom'), (3, 'phylum'), (4, 'class'), (5, 'order'), (6, 'family')]
+    for idx, rank in slot_map:
+        if idx < len(parts) and parts[idx] and not parts[idx].lower().startswith('unclassified'):
+            out[rank] = parts[idx]
+    # Also scan suffixes if non-standard slot count
+    if not any(out.values()):
+        for p in parts:
+            pl = p.lower()
+            if pl.endswith('virae'):
+                out['kingdom'] = p
+            elif pl.endswith('viricota'):
+                out['phylum'] = p
+            elif pl.endswith('viricetes'):
+                out['class'] = p
+            elif pl.endswith('virales'):
+                out['order'] = p
+            elif pl.endswith('viridae'):
+                out['family'] = p
+    return out
+
+
+def infer_putative_viral_taxonomy(triage, vp_rows, hmm_rows, gm_vir):
+    """Infer putative viral Kingdom..Genus via multi-ORF protein LCA, geNomad, HMM LCA, or BLAST."""
+    empty_tax = {f'putative_{r}': '' for r in TAX_RANKS[:6]}
+
+    # 1. Multi-ORF Viral Protein Bitscore-Weighted LCA + AA Identity Calibration
+    best_per_orf = {}
+    for row in vp_rows or []:
+        if safe_float(row.get('evalue'), 1.0) > 1e-4:
+            continue
+        oid = row.get('orf_id', '')
+        if oid not in best_per_orf or safe_float(row.get('bit_score'), 0.0) > safe_float(best_per_orf[oid].get('bit_score'), 0.0):
+            best_per_orf[oid] = row
+
+    tax_orfs = [r for r in best_per_orf.values() if any(r.get(rk, '').strip() for rk in TAX_RANKS[:6])]
+    if tax_orfs:
+        total_bits = sum(max(1.0, safe_float(r.get('bit_score'), 1.0)) for r in tax_orfs)
+        weighted_pident = sum(
+            safe_float(r.get('percent_identity'), 0.0) * max(1.0, safe_float(r.get('bit_score'), 1.0))
+            for r in tax_orfs
+        ) / total_bits
+
+        consensus = {}
+        for rk in TAX_RANKS[:6]:
+            votes = defaultdict(float)
+            for r in tax_orfs:
+                val = r.get(rk, '').strip()
+                if val:
+                    votes[val] += max(1.0, safe_float(r.get('bit_score'), 1.0))
+            if not votes:
+                consensus[rk] = ''
+                continue
+            top_taxon, top_weight = max(votes.items(), key=lambda item: item[1])
+            if top_weight / total_bits >= 0.60:
+                consensus[rk] = top_taxon
+            else:
+                # Conflicting lower ranks stop downward assignment
+                for lower_rk in TAX_RANKS[TAX_RANKS.index(rk):6]:
+                    consensus[lower_rk] = ''
+                break
+
+        # Identity-calibrated deepest rank cap (prevents over-claiming genus/family on twilight AA hits)
+        if weighted_pident < 25.0:
+            consensus['family'] = ''
+            consensus['genus'] = ''
+            level = f'order_or_class_distant({weighted_pident:.1f}%_aa)'
+        elif weighted_pident < 40.0:
+            consensus['genus'] = ''
+            level = f'family_putative_divergent({weighted_pident:.1f}%_aa)'
+        elif weighted_pident < 65.0:
+            consensus['genus'] = ''
+            level = f'family_confident_novel_genus({weighted_pident:.1f}%_aa)'
+        else:
+            level = f'genus_confident({weighted_pident:.1f}%_aa)'
+
+        if any(consensus.values()):
+            return {
+                **{f'putative_{rk}': consensus.get(rk, '') for rk in TAX_RANKS[:6]},
+                'taxonomic_assignment_level': level,
+                'taxonomy_evidence_source': f'viral_protein_lca({len(tax_orfs)}_orf{"s" if len(tax_orfs) != 1 else ""})',
+            }
+
+    # 2. geNomad Marker Taxonomy
+    if gm_vir and safe_float(gm_vir.get('virus_score'), 0.0) >= 0.7:
+        gm_lin = parse_genomad_lineage(gm_vir.get('taxonomy', ''))
+        if any(gm_lin.values()):
+            deepest = next((rk for rk in reversed(TAX_RANKS[:5]) if gm_lin.get(rk)), 'kingdom')
+            return {
+                **{f'putative_{rk}': gm_lin.get(rk, '') for rk in TAX_RANKS[:6]},
+                'taxonomic_assignment_level': f'{deepest}_marker_taxonomy',
+                'taxonomy_evidence_source': 'genomad_marker_lca',
+            }
+
+    # 3. Hallmark Profile-HMM Lineage (VOGDB LCA or RdRp/Viral clade)
+    valid_hmms = [r for r in (hmm_rows or []) if safe_float(r.get('evalue'), 1.0) <= 1e-5]
+    for h_row in valid_hmms:
+        if any(h_row.get(rk, '').strip() for rk in TAX_RANKS[:6]):
+            deepest = next((rk for rk in reversed(TAX_RANKS[:6]) if h_row.get(rk, '').strip()), 'kingdom')
+            return {
+                **{f'putative_{rk}': h_row.get(rk, '').strip() for rk in TAX_RANKS[:6]},
+                'taxonomic_assignment_level': f'{deepest}_hallmark_hmm_clade',
+                'taxonomy_evidence_source': f"hallmark_hmm:{h_row.get('hmm_name', '')}",
+            }
+
+    # 4. Divergent / Partial BLAST Viral Lineage
+    if triage.get('triage_reason') in ('divergent_or_partial_viral_hit', 'conflicting_viral_and_cellular_hits'):
+        b_tax = {rk: triage.get(f'best_viral_{rk}', '').strip() for rk in TAX_RANKS[:6]}
+        if any(b_tax.values()):
+            b_id = safe_float(triage.get('best_viral_identity'), 0.0)
+            if b_id < 70.0:
+                b_tax['genus'] = ''
+            return {
+                **{f'putative_{rk}': b_tax.get(rk, '') for rk in TAX_RANKS[:6]},
+                'taxonomic_assignment_level': f'divergent_blast_lineage({b_id:.1f}%_nt)',
+                'taxonomy_evidence_source': f"blast_{triage.get('best_viral_database', 'viral')}",
+            }
+
+    return {
+        **empty_tax,
+        'taxonomic_assignment_level': 'unassigned_no_homolog',
+        'taxonomy_evidence_source': 'none_kmer_or_architecture_only',
+    }
 
 
 def classify_candidate(triage, arch, cov, vf, checkv, gm_vir, gm_plas, provirus_flag, hmm, vp, fs):
@@ -242,7 +414,8 @@ def classify_candidate(triage, arch, cov, vf, checkv, gm_vir, gm_plas, provirus_
 def synthesize_novel_viruses(contigs_fasta, candidate_orfs, triage_manifest, architecture_tsv,
                              prefix, coverage_tsv=None, virfinder_tsv=None, checkv_tsv=None,
                              genomad_virus_tsv=None, genomad_plasmid_tsv=None,
-                             hmm_tsv=None, viral_protein_tsv=None, foldseek_tsv=None):
+                             hmm_tsv=None, viral_protein_tsv=None, foldseek_tsv=None,
+                             virfinder_tax_prefix=None):
     triage_rows = []
     if os.path.exists(triage_manifest) and os.path.getsize(triage_manifest) > 0:
         with open(triage_manifest, newline='') as handle:
@@ -253,14 +426,16 @@ def synthesize_novel_viruses(contigs_fasta, candidate_orfs, triage_manifest, arc
     vf_map = read_tsv_map(virfinder_tsv, 'name')
     cv_map = read_tsv_map(checkv_tsv, 'contig_id')
     gm_vir_map, gm_plas_map, provirus_set = read_genomad_summaries(genomad_virus_tsv, genomad_plasmid_tsv)
-    hmm_map = read_tsv_map(hmm_tsv, 'query_id')
-    vp_map = read_tsv_map(viral_protein_tsv, 'query_id')
+    hmm_grouped = read_tsv_grouped(hmm_tsv, 'query_id')
+    vp_grouped = read_tsv_grouped(viral_protein_tsv, 'query_id')
     fs_map = read_tsv_map(foldseek_tsv, 'query_id')
 
     candidate_rows = []
+    vf_tax_rows = []
     promoted_ids = {}
     class_counts = {k: 0 for k in TIER_PRIORITY}
     triage_counts = {}
+    tax_assigned_count = 0
 
     with closing(SeqIO.index(str(contigs_fasta), 'fasta')) as seq_index:
         for triage in triage_rows:
@@ -276,22 +451,30 @@ def synthesize_novel_viruses(contigs_fasta, candidate_orfs, triage_manifest, arc
             cv = cv_map.get(qid, {})
             gm_vir = gm_vir_map.get(qid, {})
             gm_plas = gm_plas_map.get(qid, {})
-            hmm = hmm_map.get(qid, {})
-            vp = vp_map.get(qid, {})
+            hmm_list = hmm_grouped.get(qid, [])
+            vp_list = vp_grouped.get(qid, [])
+            hmm = hmm_list[0] if hmm_list else {}
+            vp = vp_list[0] if vp_list else {}
             fs = fs_map.get(qid, {})
+
+            tax_assignment = infer_putative_viral_taxonomy(triage, vp_list, hmm_list, gm_vir)
+            if tax_assignment['taxonomic_assignment_level'] != 'unassigned_no_homolog':
+                tax_assigned_count += 1
 
             classification, score, evidence_str = classify_candidate(
                 triage, arch, cov, vf, cv, gm_vir, gm_plas, qid in provirus_set, hmm, vp, fs
             )
             class_counts[classification] = class_counts.get(classification, 0) + 1
             if classification in ('putative_novel_virus_high_confidence', 'putative_novel_virus_moderate_confidence'):
-                promoted_ids[qid] = (classification, score, evidence_str)
+                promoted_ids[qid] = (classification, score, evidence_str, tax_assignment)
 
-            candidate_rows.append({
+            seq_str = str(seq_index[qid].seq) if qid in seq_index else ''
+            row = {
                 'query_id': qid,
                 'contig_length': safe_int(triage.get('contig_length'), 0),
                 'discovery_classification': classification,
                 'discovery_score': score,
+                **tax_assignment,
                 'evidence_sources': evidence_str,
                 'triage_reason': triage.get('triage_reason', ''),
                 'mean_read_depth': cov.get('Average_Coverage', ''),
@@ -330,8 +513,15 @@ def synthesize_novel_viruses(contigs_fasta, candidate_orfs, triage_manifest, arc
                 'kmer_entropy': arch.get('kmer_entropy', ''),
                 'low_complexity_flag': arch.get('low_complexity_flag', 'no'),
                 'fragmented_orfs_flag': arch.get('fragmented_orfs_flag', 'no'),
-                'sequence': str(seq_index[qid].seq) if qid in seq_index else '',
-            })
+                'sequence': seq_str,
+            }
+            candidate_rows.append(row)
+
+            if vf and vf.get('confidence_tier') in ('high_confidence', 'moderate_confidence'):
+                vf_tax_rows.append({
+                    **{col: row.get(col, '') for col in VIRFINDER_TAX_COLUMNS if col != 'virfinder_pvalue'},
+                    'virfinder_pvalue': vf.get('pvalue', ''),
+                })
 
         candidate_rows.sort(key=lambda r: (
             TIER_PRIORITY.get(r['discovery_classification'], 99),
@@ -358,15 +548,42 @@ def synthesize_novel_viruses(contigs_fasta, candidate_orfs, triage_manifest, arc
             width_limits=NOVEL_WIDTH_LIMITS,
         )
 
-        # Write promoted candidate nucleotide FASTA in descending rank order
+        # Dedicated VirFinder + Putative Order/Family report when VirFinder was run
+        if virfinder_tax_prefix:
+            vf_tax_rows.sort(key=lambda r: (
+                -safe_float(r['virfinder_score'], 0.0),
+                safe_float(r['virfinder_qvalue'], 1.0),
+                -int(r['contig_length']),
+                r['query_id'],
+            ))
+            with open(f'{virfinder_tax_prefix}.tsv', 'w', newline='') as vf_out:
+                writer = csv.DictWriter(vf_out, fieldnames=VIRFINDER_TAX_COLUMNS, delimiter='\t')
+                writer.writeheader()
+                writer.writerows(vf_tax_rows)
+            write_formatted_xlsx(
+                f'{virfinder_tax_prefix}.xlsx',
+                VIRFINDER_TAX_COLUMNS,
+                vf_tax_rows,
+                f'vf_tax_{Path(prefix).name}',
+                int_cols=NOVEL_INT_COLS,
+                pct_cols=NOVEL_PCT_COLS,
+                score_cols=NOVEL_SCORE_COLS,
+                evalue_cols=NOVEL_EVALUE_COLS,
+                width_limits=NOVEL_WIDTH_LIMITS,
+            )
+
+        # Write promoted candidate nucleotide FASTA with putative order/family in header
         with open(f'{prefix}_novel_virus_candidates.fasta', 'w') as fa_out:
             for row in candidate_rows:
                 qid = row['query_id']
                 if qid in promoted_ids and qid in seq_index:
-                    cls, sc, ev = promoted_ids[qid]
+                    cls, sc, ev, tax_info = promoted_ids[qid]
+                    order_lbl = tax_info.get('putative_order') or 'Unassigned'
+                    family_lbl = tax_info.get('putative_family') or 'Unassigned'
                     fa_out.write(
                         f">{qid} classification={cls} score={sc} length={row['contig_length']} "
-                        f"evidence={ev}\n{row['sequence']}\n"
+                        f"putative_order={order_lbl} putative_family={family_lbl} "
+                        f"tax_source={tax_info['taxonomy_evidence_source']} evidence={ev}\n{row['sequence']}\n"
                     )
 
     # Write promoted candidate ORFs FASTA (for downstream phylogeny or domain inspection)
@@ -389,14 +606,20 @@ def synthesize_novel_viruses(contigs_fasta, candidate_orfs, triage_manifest, arc
         rep.write('2. Candidate Classification Breakdown:\n')
         for cls_name in TIER_PRIORITY:
             rep.write(f'   - {cls_name}: {class_counts.get(cls_name, 0)}\n')
+        rep.write(f'\n3. Putative Higher-Rank Viral Taxonomy Assigned (Order/Family/Kingdom): {tax_assigned_count}/{len(candidate_rows)}\n')
+        if tax_assigned_count == 0 and len(candidate_rows) > 0:
+            rep.write('   Tip: Run `python scripts/setup_databases.py --db-dir ./dbs --preset discovery_only`\n')
+            rep.write('   and pass `-c ./dbs/databases.config --run_viral_protein_blast --run_viral_hmm` to\n')
+            rep.write('   assign viral Order and Family to VirFinder and dark-matter candidates.\n')
         rep.write('\nNote: Candidate classifications separate sequence detection from confirmed\n')
         rep.write('host infection. Inspect read breadth, EVE/provirus flags, and phylogenies before\n')
         rep.write('making taxonomic or host-association claims.\n')
 
     print(
         f'Synthesized {len(candidate_rows)} candidate contigs for {prefix}: '
-        f'{class_counts["putative_novel_virus_high_confidence"]} high-confidence and '
-        f'{class_counts["putative_novel_virus_moderate_confidence"]} moderate-confidence novel candidates.'
+        f'{class_counts["putative_novel_virus_high_confidence"]} high-confidence, '
+        f'{class_counts["putative_novel_virus_moderate_confidence"]} moderate-confidence, '
+        f'{tax_assigned_count} assigned putative viral taxonomy.'
     )
 
 
@@ -415,12 +638,14 @@ def main():
     parser.add_argument('--hmm_hits')
     parser.add_argument('--viral_protein_hits')
     parser.add_argument('--foldseek_hits')
+    parser.add_argument('--virfinder_tax_prefix', help='Optional output prefix for VirFinder+Taxonomy TSV/XLSX')
     args = parser.parse_args()
     synthesize_novel_viruses(
         args.contigs_fasta, args.candidate_orfs, args.triage_manifest,
         args.architecture, args.prefix, args.coverage, args.virfinder,
         args.checkv, args.genomad_virus, args.genomad_plasmid,
         args.hmm_hits, args.viral_protein_hits, args.foldseek_hits,
+        args.virfinder_tax_prefix,
     )
 
 

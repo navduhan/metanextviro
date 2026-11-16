@@ -1,4 +1,4 @@
-// Optional viral hallmark profile-HMM scan (RdRp, Capsid, Rep, Helicase, Terminase)
+// Optional viral hallmark profile-HMM scan with VOGDB/ICTV taxonomic lineage resolution
 process viral_hmm {
     tag "$id"
     label 'medium'
@@ -13,6 +13,8 @@ process viral_hmm {
         tuple val(id), path("${id}_raw_hmm_domtbl.txt"), emit: raw_domtbl
 
     script:
+    def taxArg = params.taxonomy_db ? "--taxonomy_db '" + file(params.taxonomy_db).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
+    def hmmTaxArg = params.viral_hmm_taxonomy ? "--hmm_taxonomy '" + file(params.viral_hmm_taxonomy).toAbsolutePath().toString().replace("'", "'\"'\"'") + "'" : ''
     """
     set -euo pipefail
 
@@ -32,6 +34,7 @@ process viral_hmm {
     python3 ${workflow.projectDir}/nextflow/bin/parse_discovery_hits.py \
         --mode hmm \
         -i ${id}_raw_hmm_domtbl.txt \
-        -o ${id}_hallmark_hmm_hits.tsv
+        -o ${id}_hallmark_hmm_hits.tsv \
+        ${taxArg} ${hmmTaxArg}
     """
 }
