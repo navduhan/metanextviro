@@ -21,6 +21,7 @@ workflow COVERAGE_ANALYSIS {
     emit:
         bam = coverage.out.bam
         stats = coverage.out.stats
+        mapping_log = coverage.out.mapping_log
         plot = coverage_plot.out.plot
         distribution_plot = coverage_plot.out.distribution_plot
 }

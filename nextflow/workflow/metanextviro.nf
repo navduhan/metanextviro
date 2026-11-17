@@ -10,8 +10,8 @@ include { TAXONOMIC_PROFILING } from '../subworkflow/taxonomic_profiling.nf'
 include { VIRAL_ANALYSIS } from '../subworkflow/viral_analysis.nf'
 include { CONTIG_TRIAGE; NOVEL_VIRUS_DETECTION } from '../subworkflow/novel_virus_detection.nf'
 include { CONTIG_ORGANIZATION } from '../subworkflow/organize_contigs.nf'
-include { VISUALIZATION } from '../subworkflow/visualization.nf'
 include { COVERAGE_ANALYSIS } from '../subworkflow/coverage_analysis.nf'
+include { final_report } from '../modules/final_report.nf'
 
 workflow metanextviro {
     take:
@@ -31,9 +31,11 @@ workflow metanextviro {
         ch_trimmed_reads2 = ch_reads2
         ch_host_depletion_stats = Channel.empty()
         ch_contigs = Channel.empty()
+        ch_assembly_stats = Channel.empty()
         ch_blastn_results_viruses = Channel.empty()
         ch_blastn_results_nt = Channel.empty()
         ch_blastx_results_nr = Channel.empty()
+        ch_blast_best_tsvs = Channel.empty()
         ch_all_blast = Channel.empty()
         ch_kraken2_reports = Channel.empty()
         ch_kraken2_outputs = Channel.empty()
@@ -48,14 +50,20 @@ workflow metanextviro {
         ch_genomad_plasmid = Channel.empty()
         ch_coverage_bam = Channel.empty()
         ch_coverage_stats = Channel.empty()
+        ch_coverage_logs = Channel.empty()
         ch_coverage_plot = Channel.empty()
         ch_coverage_distribution_plot = Channel.empty()
         ch_organized_dirs = Channel.empty()
         ch_organization_summaries = Channel.empty()
+        ch_triage_manifest = Channel.empty()
         ch_novel_candidates_xlsx = Channel.empty()
         ch_novel_candidates_tsv = Channel.empty()
         ch_novel_candidates_fasta = Channel.empty()
         ch_novel_phylogeny = Channel.empty()
+        ch_cohort_pdf = Channel.empty()
+        ch_cohort_html = Channel.empty()
+        ch_sample_pdfs = Channel.empty()
+        ch_sample_htmls = Channel.empty()
 
         // Run pipeline steps
         if (!params.skip_quality) {
@@ -81,6 +89,7 @@ workflow metanextviro {
         if (!params.skip_assembly) {
             ASSEMBLY(ch_analysis_reads1, ch_analysis_reads2)
             ch_contigs = ASSEMBLY.out.contigs
+            ch_assembly_stats = ASSEMBLY.out.assembly_stats
         }
         
         if (!params.skip_blast_annotation && !params.skip_assembly) {
@@ -88,6 +97,7 @@ workflow metanextviro {
             ch_blastn_results_viruses = BLAST_ANNOTATION.out.blastn_results_viruses
             ch_blastn_results_nt = BLAST_ANNOTATION.out.blastn_results_nt
             ch_blastx_results_nr = BLAST_ANNOTATION.out.blastx_results_nr
+            ch_blast_best_tsvs = BLAST_ANNOTATION.out.best_hits_tsv
 
             ch_all_blast = ch_blastn_results_nt
                 .mix(ch_blastn_results_viruses, ch_blastx_results_nr)
@@ -110,6 +120,7 @@ workflow metanextviro {
             )
             ch_coverage_bam = COVERAGE_ANALYSIS.out.bam
             ch_coverage_stats = COVERAGE_ANALYSIS.out.stats
+            ch_coverage_logs = COVERAGE_ANALYSIS.out.mapping_log
             ch_coverage_plot = COVERAGE_ANALYSIS.out.plot
             ch_coverage_distribution_plot = COVERAGE_ANALYSIS.out.distribution_plot
         }
@@ -173,6 +184,66 @@ workflow metanextviro {
             ch_organization_summaries = CONTIG_ORGANIZATION.out.summaries
         }
 
+        if (!params.skip_visualization && !params.skip_final_report && !params.skip_report) {
+            ch_sample_ids = ch_reads1.map { id, _r1 -> id }.collect()
+
+            ch_report_files = Channel.of(file("${workflow.projectDir}/nextflow.config"))
+                .mix(
+                    ch_contigs.map { _id, path -> path },
+                    ch_assembly_stats.map { _meta, dir -> dir },
+                    ch_host_depletion_stats.map { _id, path -> path },
+                    ch_kraken2_reports.map { _id, path -> path },
+                    ch_blast_best_tsvs.map { _id, path -> path },
+                    ch_coverage_stats.map { _id, path -> path },
+                    ch_coverage_logs.map { _id, path -> path },
+                    ch_triage_manifest.map { _id, path -> path },
+                    ch_novel_candidates_tsv.map { _id, path -> path },
+                    ch_virfinder_table.map { _id, path -> path }
+                )
+                .collect()
+
+            def blastOptsLabel = (params.blast_options instanceof Collection)
+                ? params.blast_options.join(',')
+                : params.blast_options.toString()
+
+            def runMetaJson = groovy.json.JsonOutput.toJson([
+                version                 : workflow.manifest.version ?: '0.2.0',
+                nextflow_version        : "${nextflow.version}".toString(),
+                run_name                : workflow.runName ?: 'local',
+                assembler               : params.assembler,
+                min_contig_length       : params.min_contig_length,
+                trimming_tool           : params.trimming_tool,
+                quality                 : params.quality,
+                deplete_host            : (params.deplete_host && !params.skip_host_depletion),
+                blast_options           : blastOptsLabel,
+                blast_max_target_seqs   : params.blast_max_target_seqs,
+                known_virus_identity    : params.known_virus_identity,
+                known_virus_coverage    : params.known_virus_coverage,
+                novel_min_contig_length : params.novel_min_contig_length,
+                skip_trimming           : params.skip_trimming,
+                skip_assembly           : params.skip_assembly,
+                skip_blast_annotation   : params.skip_blast_annotation,
+                skip_taxonomic_profiling: params.skip_taxonomic_profiling,
+                skip_coverage_analysis  : params.skip_coverage_analysis
+            ])
+            def runMetaB64 = java.util.Base64.getEncoder().encodeToString(runMetaJson.getBytes('UTF-8'))
+
+            def logoFile = file("${workflow.projectDir}/logo.png").exists()
+                ? file("${workflow.projectDir}/logo.png")
+                : file("${workflow.projectDir}/nextflow.config")
+
+            final_report(
+                ch_sample_ids,
+                ch_report_files,
+                Channel.value(logoFile),
+                Channel.value(runMetaB64)
+            )
+            ch_cohort_pdf = final_report.out.cohort_pdf
+            ch_cohort_html = final_report.out.cohort_html
+            ch_sample_pdfs = final_report.out.sample_pdfs
+            ch_sample_htmls = final_report.out.sample_htmls
+        }
+
     emit:
         // Quality control outputs
         quality_reports = ch_quality_reports
@@ -217,4 +288,10 @@ workflow metanextviro {
 
         coverage_plots = ch_coverage_plot
         coverage_distributions = ch_coverage_distribution_plot
+
+        // Final cohort and per-sample reports
+        cohort_pdf = ch_cohort_pdf
+        cohort_html = ch_cohort_html
+        sample_pdfs = ch_sample_pdfs
+        sample_htmls = ch_sample_htmls
 }

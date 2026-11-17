@@ -30,6 +30,7 @@ dependencies:
   - biopython
   - pandas
   - openpyxl
+  - reportlab
   - matplotlib
   - seaborn
   - r-base =4.3.1

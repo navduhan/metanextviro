@@ -13,6 +13,9 @@ workflow BLAST_ANNOTATION {
         def blastn_viruses_channel = Channel.empty()
         def blastn_channel = Channel.empty()
         def blastx_channel = Channel.empty()
+        def best_viruses_channel = Channel.empty()
+        def best_nt_channel = Channel.empty()
+        def best_nr_channel = Channel.empty()
 
         // Accept config/params-file lists and comma-separated command-line values.
         def selected_options = (params.blast_options instanceof Collection
@@ -33,24 +36,30 @@ workflow BLAST_ANNOTATION {
             println "Running BLASTN against the viruses database..."
             blastn_viruses(fasta_file)
             blastn_viruses_channel = blastn_viruses.out.formatted_blast_output
+            best_viruses_channel = blastn_viruses.out.best_hit_tsv
         }
 
         if ('nt' in selected_options || 'all' in selected_options) {
             println "Running BLASTN against the NT database..."
             blastn(fasta_file)
             blastn_channel = blastn.out.formatted_blast_output
+            best_nt_channel = blastn.out.best_hit_tsv
         }
 
         if ('nr' in selected_options || 'all' in selected_options) {
             println "Running BLASTX against the NR database..."
             blastx(fasta_file)
             blastx_channel = blastx.out.formatted_blast_output
+            best_nr_channel = blastx.out.best_hit_tsv
         }
+
+        def all_best_hits_tsv = best_viruses_channel.mix(best_nt_channel, best_nr_channel)
 
     emit:
         // Emit results for each BLAST option
         blastn_results_viruses = blastn_viruses_channel
         blastn_results_nt = blastn_channel
         blastx_results_nr = blastx_channel
+        best_hits_tsv = all_best_hits_tsv
 }
 

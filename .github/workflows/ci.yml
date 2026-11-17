@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install Python test dependencies
-        run: pip install biopython pandas openpyxl
+        run: pip install biopython pandas openpyxl matplotlib reportlab
       - name: Run unit test suite
         run: python -m unittest discover -s tests -v
 

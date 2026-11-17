@@ -556,8 +556,8 @@ Any process without a label receives a minimal default of 2 CPUs, 8 GB of RAM, a
 8. **Coverage Analysis**
    - Contig-level coverage calculation and statistics
    - Enhanced coverage plots with intelligent x-axis labeling
-9. **Final Report Generation**
-   - A comprehensive and modern HTML summary report is generated using a Nextflow template.
+9. **Final Report Generation (Cohort & Sample-Wise PDF + Interactive HTML)**
+   - Multi-sample cohort summary (`MetaNextViro_Summary_Report.pdf` & `.html`) and per-sample reports (`per_sample/<sample>_Viral_Report.pdf` & `.html`) with 300-DPI figures, sortable/filterable tables, dynamic Methods, and scientific interpretation guardrails.
 
 ## Output Structure
 
@@ -574,20 +574,24 @@ results/
 ├── krona_results/        # Krona HTML visualizations
 ├── organized_contigs/    # Organized contigs by taxonomy (when enabled)
 ├── checkv/               # CheckV quality/completeness assessment (when enabled)
-├── virfinder/            # VirFinder results (when enabled)
+├── virfinder/            # VirFinder results + putative Order/Family taxonomy (when enabled)
+├── novel_virus_detection/# Ranked novel virus candidates (.xlsx/.tsv/.fasta) & details/ (when enabled)
 ├── coverage/             # BAM files and contig-level coverage stats
 ├── coverage_plots/       # Coverage plots (PNG)
-├── final_report/         # Comprehensive HTML report (final step)
+├── final_report/         # Cohort & sample-wise PDF and standalone interactive HTML reports
+│   ├── MetaNextViro_Summary_Report.pdf
+│   ├── MetaNextViro_Summary_Report.html
+│   └── per_sample/
+│       ├── <sample>_Viral_Report.pdf
+│       └── <sample>_Viral_Report.html
 └── ...                   # Other outputs as configured
 ```
 
 ## Key Output Files
 
-### Final Report
-- `final_report.html`: A comprehensive and modern HTML summary report. It includes:
-  - A clean, card-based layout for easy navigation.
-  - Direct links to key results from all major pipeline steps.
-  - A summary of the run and a timestamp.
+### Final Report (`final_report/`)
+- `MetaNextViro_Summary_Report.pdf` & `MetaNextViro_Summary_Report.html`: Cohort-level publication-grade PDF (via ReportLab Platypus with vector Matplotlib fallback) and standalone offline interactive HTML report (sortable/filterable tables, container-responsive layout, 300-DPI colorblind-safe Okabe–Ito figures, dynamic Materials & Methods paragraph, and scientific interpretation guardrails).
+- `per_sample/<sample>_Viral_Report.pdf` & `per_sample/<sample>_Viral_Report.html`: Dedicated single-sample diagnostic and discovery reports for every sample in the samplesheet, cross-linked from the cohort HTML report.
 
 ### VirFinder Results
 - `virfinder_full_*.txt`: Complete VirFinder results for all contigs
