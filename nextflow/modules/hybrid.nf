@@ -1,3 +1,7 @@
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Merges MEGAHIT and metaSPAdes assemblies, clusters redundant contigs with CD-HIT-EST, and standardizes headers with rename_contigs.py.
+
 process hybrid {
     tag "$id"  // Tag the task with the sample ID for traceability
 
@@ -48,7 +52,7 @@ process hybrid {
 
     # Rename the contig headers
     echo " Renaming contig headers for sample: $id"
-    python3 ${workflow.projectDir}/nextflow/bin/rename_contigs.py -i hybrid_assembly/${id}/${id}_merged_cdhit.fasta -o hybrid_assembly/${id}/${id}_metanextviro_hybrid_contigs.fa -s hybrid
+    python3 ${workflow.projectDir}/bin/rename_contigs.py -i hybrid_assembly/${id}/${id}_merged_cdhit.fasta -o hybrid_assembly/${id}/${id}_metanextviro_hybrid_contigs.fa -s hybrid
 
     # Verify renamed contigs
     if [ ! -f "hybrid_assembly/${id}/${id}_metanextviro_hybrid_contigs.fa" ]; then

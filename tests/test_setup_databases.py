@@ -1,4 +1,7 @@
-"""Unit tests for scripts/setup_databases.py minimal database builder."""
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Unit tests verifying database preset dependency resolution, organism name taxid lookup, VOGDB taxonomy merging, config export, and CLI command assembly."""
+
 import csv
 import gzip
 import importlib.util
@@ -17,7 +20,7 @@ from metanextviro_cli import cli as mn_cli  # noqa: E402
 
 
 def load_setup_module():
-    spec = importlib.util.spec_from_file_location('setup_databases', ROOT / 'scripts/setup_databases.py')
+    spec = importlib.util.spec_from_file_location('setup_databases', ROOT / 'bin/setup_databases.py')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -109,7 +112,7 @@ class SetupDatabasesTests(unittest.TestCase):
 
     def test_cli_dry_run_exits_cleanly_without_network(self):
         proc = subprocess.run(
-            [sys.executable, str(ROOT / 'scripts/setup_databases.py'),
+            [sys.executable, str(ROOT / 'bin/setup_databases.py'),
              '--db-dir', str(self.base / 'planned_dbs'), '--dry-run'],
             capture_output=True, text=True, check=True,
         )
@@ -124,10 +127,17 @@ class SetupDatabasesTests(unittest.TestCase):
         self.assertIn('MetaNextViro v0.2.0', info)
 
         setup_cmd, _ = mn_cli.build_nextflow_command(['setup-db', '--db-dir', '/tmp/dbs', '--dry-run'])
-        self.assertEqual(setup_cmd[:2], [sys.executable, str(ROOT / 'scripts/setup_databases.py')])
+        self.assertEqual(setup_cmd[:2], [sys.executable, str(ROOT / 'bin/setup_databases.py')])
         self.assertEqual(setup_cmd[2:], ['--db-dir', '/tmp/dbs', '--dry-run'])
 
+        sheet_cmd, _ = mn_cli.build_nextflow_command(['create-samplesheet', '--reads-dir', '/tmp/fq'])
+        self.assertEqual(sheet_cmd[:2], [sys.executable, str(ROOT / 'bin/create_samplesheet.py')])
+        self.assertEqual(sheet_cmd[2:], ['--reads-dir', '/tmp/fq'])
+
         with patch('shutil.which', return_value='/usr/local/bin/nextflow'):
+            pull_cmd, _ = mn_cli.build_nextflow_command(['pull'])
+            self.assertEqual(pull_cmd, ['/usr/local/bin/nextflow', 'pull', 'navduhan/metanextviro'])
+
             nf_cmd, _ = mn_cli.build_nextflow_command(['--input', 'samples.csv', '-profile', 'conda'])
             self.assertEqual(nf_cmd[:3], ['/usr/local/bin/nextflow', 'run', str(ROOT / 'main.nf')])
             self.assertEqual(nf_cmd[3:], ['--input', 'samples.csv', '-profile', 'conda'])

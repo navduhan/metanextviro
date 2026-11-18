@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Evaluates assembled contig FASTA files with QUAST to report contig counts, N50, and assembly length statistics.
 
 process quast {
     tag "$meta.id"

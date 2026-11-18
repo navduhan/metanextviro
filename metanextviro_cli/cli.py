@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Command-line launcher so users can run `metanextviro ...` directly."""
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Thin command-line wrapper that forwards metanextviro arguments to nextflow run and provides shortcuts for pull, setup-db, create-samplesheet, and cleanup."""
 
-import os
 import shutil
 import subprocess
 import sys
@@ -38,13 +39,30 @@ def build_nextflow_command(argv):
     if argv and argv[0] in ("-v", "--version", "version"):
         return None, f"MetaNextViro v{__version__} (target: {target})"
 
+    # Convenient subcommand alias: `metanextviro pull` (caches navduhan/metanextviro so `nextflow run metanextviro` works)
+    if argv and argv[0] == "pull":
+        nf = ensure_nextflow()
+        return [nf, "pull", GITHUB_REPO, *argv[1:]], None
+
     # Convenient subcommand alias: `metanextviro setup-db ...`
     if argv and argv[0] == "setup-db":
         rest = argv[1:]
-        if repo_root and (repo_root / "scripts/setup_databases.py").is_file():
-            return [sys.executable, str(repo_root / "scripts/setup_databases.py"), *rest], None
+        if repo_root and (repo_root / "bin/setup_databases.py").is_file():
+            return [sys.executable, str(repo_root / "bin/setup_databases.py"), *rest], None
         nf = ensure_nextflow()
         return [nf, "run", target, "--setup_databases", *rest], None
+
+    # Convenient subcommand alias: `metanextviro create-samplesheet ...`
+    if argv and argv[0] in ("create-samplesheet", "samplesheet"):
+        rest = argv[1:]
+        if repo_root and (repo_root / "bin/create_samplesheet.py").is_file():
+            return [sys.executable, str(repo_root / "bin/create_samplesheet.py"), *rest], None
+        nf = ensure_nextflow()
+        return [nf, "run", target, "--create_samplesheet", *rest], None
+
+    # Convenient subcommand alias: `metanextviro cleanup ...`
+    if argv and argv[0] == "cleanup" and repo_root and (repo_root / "bin/cleanup_work.py").is_file():
+        return [sys.executable, str(repo_root / "bin/cleanup_work.py"), *argv[1:]], None
 
     nf = ensure_nextflow()
     if not argv:

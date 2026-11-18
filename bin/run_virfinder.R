@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
-# Enhanced VirFinder wrapper with empty-FASTA handling, FDR q-values,
-# 3-mer Shannon entropy repeat screening, and descending score sorting.
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+# Description: Runs VirFinder 8-mer viral scoring on assembled contigs, handles empty FASTA inputs safely, computes FDR q-values and 3-mer Shannon entropy metrics, and writes full and filtered TSV outputs.
 
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 3) {

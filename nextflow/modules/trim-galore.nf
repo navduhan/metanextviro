@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Performs paired-end adapter removal and quality trimming using Trim Galore and Cutadapt.
 
 process trim_galore {
     tag "$id"  // Tagging process with sample ID for traceability

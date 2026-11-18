@@ -108,20 +108,30 @@ graph TD
 
 ### Basic Usage (No Manual Git Clone Required)
 ```bash
-# 1. One-time database setup directly through Nextflow (~4.0 GB full viral suite by default):
-nextflow run navduhan/metanextviro \
+# 0. One-time pull — caches the pipeline in ~/.nextflow/assets so you can run
+#    short `nextflow run metanextviro` from any directory without `navduhan/`:
+nextflow pull navduhan/metanextviro
+
+# 1. Generate a validated samplesheet.csv from a directory of paired FASTQ files:
+nextflow run metanextviro \
+  --create_samplesheet \
+  --reads_dir ./raw_fastqs \
+  --samplesheet samplesheet.csv
+
+# 2. One-time database setup directly through Nextflow (~4.0 GB full viral suite by default):
+nextflow run metanextviro \
   --setup_databases \
   --db_dir ~/.metanextviro/dbs \
   -profile conda
 
-# 2. Routine known-virus analysis (auto-detects databases in --db_dir):
-nextflow run navduhan/metanextviro \
+# 3. Routine known-virus analysis (pass --input samplesheet.csv OR --reads_dir ./raw_fastqs):
+nextflow run metanextviro \
   --input samplesheet.csv \
   --outdir results \
   -profile conda
 
-# 3. Novel virus discovery + VirFinder (with automatic Order/Family assignment):
-nextflow run navduhan/metanextviro \
+# 4. Novel virus discovery + VirFinder (with automatic Order/Family assignment):
+nextflow run metanextviro \
   --input samplesheet.csv \
   --outdir results \
   --discover_novel_viruses \
@@ -130,18 +140,20 @@ nextflow run navduhan/metanextviro \
 
 # Optional: Install the `metanextviro` CLI launcher via pip:
 pip install git+https://github.com/navduhan/metanextviro.git
+metanextviro pull
+metanextviro --create_samplesheet --reads_dir ./raw_fastqs
 metanextviro --setup_databases -profile conda
 metanextviro --input samplesheet.csv -profile conda
 
 # On SDSU HPC cluster (uses pre-configured /mmfs1 reference paths + SLURM):
-nextflow run navduhan/metanextviro \
+nextflow run metanextviro \
   --input samplesheet.csv \
   --account <slurm_account> \
   -profile sdsu,singularity
 ```
 
 ### Sample Input Format
-Create a `samplesheet.csv` file:
+Generate `samplesheet.csv` automatically with `nextflow run metanextviro --create_samplesheet --reads_dir ./raw_fastqs` (or run straight from `--reads_dir ./raw_fastqs`), or create `samplesheet.csv` manually:
 ```csv
 sample,fastq_1,fastq_2
 sample1,/path/to/sample1_R1.fastq.gz,/path/to/sample1_R2.fastq.gz
@@ -324,7 +336,7 @@ and `--skip_contig_organization` overrides `--organize_contigs`.
 
 ## Database Download & Setup Presets (Nextflow `--setup_databases` or Standalone)
 
-Databases can be downloaded and indexed **directly through Nextflow** (runs on the local submission node even under `-profile slurm`) or via `scripts/setup_databases.py`. Select a preset with `--db_preset` (default: `full_viral`):
+Databases can be downloaded and indexed **directly through Nextflow** (runs on the local submission node even under `-profile slurm`) or via `bin/setup_databases.py`. Select a preset with `--db_preset` (default: `full_viral`):
 
 | `--db_preset` | Approx. Size | Included Databases |
 | :--- | :--- | :--- |
@@ -347,7 +359,7 @@ nextflow run navduhan/metanextviro --setup_databases --db_preset genbank_complet
 nextflow run navduhan/metanextviro --input samplesheet.csv --auto_download_dbs -profile conda
 
 # Option C: Standalone Python helper (supports --dry-run preview):
-python scripts/setup_databases.py --db-dir ~/.metanextviro/dbs --dry-run
+python bin/setup_databases.py --db-dir ~/.metanextviro/dbs --dry-run
 ```
 
 Once built in `--db_dir` (default `~/.metanextviro/dbs`), Nextflow **automatically discovers** `taxonomy_db`, `blastdb_viruses`, `kraken2_db`, `viral_protein_db`, `viral_hmm_db`, `viral_hmm_taxonomy`, `phylo_reference_faa`, `checkv_db`, and `genomad_db`:
@@ -404,11 +416,11 @@ that every scientific output you intended to retain has been published.
 
 ```bash
 # Preview only. --launch-dir is the original directory containing .nextflow/.
-python scripts/cleanup_work.py --run RUN_NAME \
+python bin/cleanup_work.py --run RUN_NAME \
   --launch-dir /path/to/launch_directory --results /path/to/results
 
 # After reviewing the preview and validating results, apply the same cleanup.
-python scripts/cleanup_work.py --run RUN_NAME \
+python bin/cleanup_work.py --run RUN_NAME \
   --launch-dir /path/to/launch_directory --results /path/to/results --apply
 ```
 
@@ -606,7 +618,7 @@ results/
 - `nextflow.config`: Main configuration file.
 - `environment.yml`: Conda environment for all dependencies.
 - `Dockerfile`: (Optional) Build your own container for full reproducibility.
-- `nextflow/bin/`: Custom scripts and templates for enhanced functionality.
+- `bin/`: Executable Nextflow helper scripts (automatically added to task `PATH`), database provisioning, samplesheet creation, and work-directory cleanup.
 
 ## Docker & Singularity Support
 

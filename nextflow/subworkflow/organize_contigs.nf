@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Joins BLAST annotation outputs with assembled contigs per sample and runs organize_contigs_by_taxonomy.py to group sequences by taxonomy and isolate chimeras.
 
 process ORGANIZE_CONTIGS {
     tag "$id"
@@ -15,7 +17,7 @@ process ORGANIZE_CONTIGS {
 
     script:
         """
-        python3 ${workflow.projectDir}/nextflow/bin/organize_contigs_by_taxonomy.py \\
+        python3 ${workflow.projectDir}/bin/organize_contigs_by_taxonomy.py \\
             --blast_results ${blast_results} \\
             --fasta_file ${contigs} \\
             --output_dir . \\

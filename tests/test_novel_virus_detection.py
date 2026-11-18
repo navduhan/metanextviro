@@ -1,4 +1,7 @@
-"""Unit regressions for automated post-BLAST contig triage and novel virus discovery."""
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Unit tests verifying post-BLAST contig triage, 6-frame ORF and terminal repeat scanning, multi-evidence scoring, and ICTV taxonomic rank calibration."""
+
 import csv
 import importlib.util
 import random
@@ -16,7 +19,7 @@ NS = {'main': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
 
 
 def load_script(name):
-    spec = importlib.util.spec_from_file_location(name, ROOT / 'nextflow/bin' / f'{name}.py')
+    spec = importlib.util.spec_from_file_location(name, ROOT / 'bin' / f'{name}.py')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Data aggregation, dynamic Methods synthesis, and Matplotlib figures for MetaNextViro reports."""
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Collects quality control, host depletion, assembly, BLAST, Kraken2, coverage, and discovery outputs across samples and builds summary tables, dynamic methods text, and Matplotlib figures for reporting."""
 
 import base64
 import csv

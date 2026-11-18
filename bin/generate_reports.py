@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Generate Cohort and Sample-Wise PDF + Interactive HTML reports for MetaNextViro."""
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Generates cohort summary and per-sample viral analysis reports in PDF and standalone HTML formats. Combines aggregated pipeline metrics, high-resolution charts, and dynamic methods text into self-contained files."""
 
 import argparse
 import base64

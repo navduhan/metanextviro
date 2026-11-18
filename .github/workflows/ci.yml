@@ -1,3 +1,7 @@
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+# Description: GitHub Actions workflow that runs the Python unit test suite on pushes and pull requests and publishes the container image to GitHub Container Registry on main and release tags.
+
 name: CI and Container Publish
 
 on:

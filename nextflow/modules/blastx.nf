@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Searches assembled contigs against the protein nr database using DIAMOND blastx or NCBI blastx and summarizes retained hits with process_blast_results.py.
 
 process blastx {
     tag "$id"  // Tag the task with the query ID for traceability
@@ -71,7 +73,7 @@ process blastx {
     echo " Processing \$(echo ${params.blastx_tool} | tr '[:lower:]' '[:upper:]') results for sample: $id"
 
     # Run Python script to process the BLASTX results
-    python3 ${workflow.projectDir}/nextflow/bin/process_blast_results.py \
+    python3 ${workflow.projectDir}/bin/process_blast_results.py \
         -b ${id}_raw_nr.txt \
         -f ${fasta_file} \
         -p ${id} \

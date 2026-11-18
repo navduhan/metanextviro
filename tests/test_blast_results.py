@@ -1,4 +1,7 @@
-"""Synthetic regressions for sorted BLAST reporting, XLSX widths, and contig organization."""
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Unit tests verifying multi-HSP interval union merging, NCBI LCA resolution, descending TSV and XLSX export, and inter-family chimera routing."""
+
 import csv
 import importlib.util
 import tempfile
@@ -13,7 +16,7 @@ NS = {'main': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
 
 
 def load_script(name):
-    spec = importlib.util.spec_from_file_location(name, ROOT / 'nextflow/bin' / f'{name}.py')
+    spec = importlib.util.spec_from_file_location(name, ROOT / 'bin' / f'{name}.py')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

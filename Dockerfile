@@ -1,3 +1,7 @@
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+# Description: Builds the MetaNextViro container image from Miniconda3 using environment.yml and copies the pipeline source files into /workspace.
+
 FROM continuumio/miniconda3:4.12.0
 
 LABEL maintainer="Naveen Duhan <naveen.duhan@outlook.com>"

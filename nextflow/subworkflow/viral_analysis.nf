@@ -1,4 +1,7 @@
-// Viral analysis subworkflow (CheckV, enhanced VirFinder, optional geNomad)
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Runs optional CheckV, VirFinder, and geNomad contig classification modules when enabled by pipeline parameters.
+
 include { checkv } from '../modules/checkv.nf'
 include { virfinder } from '../modules/virfinder.nf'
 include { genomad } from '../modules/genomad.nf'

@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Pairs sample read channels and runs FastQC to generate initial read quality reports.
 
 include { fastqc } from '../modules/fastqc.nf'
 

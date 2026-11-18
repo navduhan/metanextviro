@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Sorts assembled contigs into taxonomic directories based on retained BLAST alignment hits. Routes contigs with inter-family conflicts or unresolved taxids into needs_review for manual inspection."""
 
 import argparse
 import pandas as pd

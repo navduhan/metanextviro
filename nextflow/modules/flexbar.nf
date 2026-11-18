@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Performs adapter trimming and Phred quality filtering on paired-end reads using Flexbar.
 
 process flexbar {
     tag "$id"  // Tagging process with sample ID for traceability

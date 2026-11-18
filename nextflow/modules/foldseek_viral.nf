@@ -1,4 +1,7 @@
-// Optional 3D structural homology search on candidate ORFs via Foldseek (supports ProstT5 AA-to-3Di)
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Runs optional Foldseek 3D structural homology searches on candidate viral ORFs and formats parsed alignments with parse_discovery_hits.py.
+
 process foldseek_viral {
     tag "$id"
     label 'medium'
@@ -33,7 +36,7 @@ process foldseek_viral {
         : > ${id}_raw_foldseek.txt
     fi
 
-    python3 ${workflow.projectDir}/nextflow/bin/parse_discovery_hits.py \
+    python3 ${workflow.projectDir}/bin/parse_discovery_hits.py \
         --mode foldseek \
         -i ${id}_raw_foldseek.txt \
         -o ${id}_foldseek_hits.tsv

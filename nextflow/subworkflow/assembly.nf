@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Selects MEGAHIT, metaSPAdes, or hybrid assembly based on params.assembler and evaluates reconstructed contigs with QUAST.
 
 include { megahit } from "../modules/megahit"
 include { metaspades } from "../modules/metaspades"

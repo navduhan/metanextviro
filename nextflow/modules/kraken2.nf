@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Classifies trimmed paired-end reads against a Kraken2 reference database and writes per-sample classification output and taxonomic summary reports.
 
 process kraken2 {
     tag "$id"  // Tag each task with the sample ID for better traceability

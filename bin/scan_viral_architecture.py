@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Scan candidate contigs for 6-frame viral ORFs, coding density, DTR/ITR, and complexity/EVE signals."""
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Scans candidate contigs across six reading frames for edge-open viral ORFs, coding density, direct and inverted terminal repeats, 3-mer Shannon entropy, and stop-codon fragmentation signatures."""
 
 import argparse
 import csv

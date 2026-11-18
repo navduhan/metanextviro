@@ -1,4 +1,7 @@
-// Comparative heatmap visualization
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Reads a tab-delimited abundance matrix and plots a comparative heatmap PNG using pandas and seaborn.
+
 process heatmap {
     label 'process_medium'
     publishDir "${params.outdir}/heatmaps", mode: params.publish_mode, overwrite: true, failOnError: true

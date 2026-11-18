@@ -1,4 +1,7 @@
-"""Check cleanup guards without deleting real task data."""
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Unit tests checking Nextflow run history parsing, symlink and overlap guards, and dry-run versus apply behavior in cleanup_work.py."""
+
 import importlib.util
 import tempfile
 import unittest
@@ -6,7 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location('cleanup_work', ROOT / 'scripts/cleanup_work.py')
+spec = importlib.util.spec_from_file_location('cleanup_work', ROOT / 'bin/cleanup_work.py')
 cleanup = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cleanup)
 HISTORY = ('TIMESTAMP\tDURATION\tRUN NAME    \tSTATUS\tREVISION ID\tSESSION ID\tCOMMAND\n'

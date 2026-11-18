@@ -1,4 +1,6 @@
-// nextflow/subworkflow/coverage_analysis.nf
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Connects assembled contigs and trimmed paired reads to the coverage module and emits whole-contig depth tables and BAM alignments.
 
 include { coverage } from '../modules/coverage.nf'
 include { coverage_plot } from '../modules/coverage_plot.nf'

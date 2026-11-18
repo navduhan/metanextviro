@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Partition assembled contigs after BLAST so novel-virus tools skip confident known hits."""
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Partitions assembled contigs after BLAST alignment so confident known viral hits, cellular sequences, and short fragments skip downstream discovery while unassigned or divergent contigs move forward."""
 
 import argparse
 import csv

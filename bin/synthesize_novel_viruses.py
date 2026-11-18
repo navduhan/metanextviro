@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Integrate multi-evidence layers and assign Order/Family taxonomy to novel & VirFinder contigs."""
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Combines architecture metrics, HMM, DIAMOND, Foldseek, geNomad, CheckV, VirFinder, and coverage evidence into a composite viral score and assigns identity-capped ICTV taxonomy to candidate contigs."""
 
 import argparse
 import csv
@@ -608,8 +610,8 @@ def synthesize_novel_viruses(contigs_fasta, candidate_orfs, triage_manifest, arc
             rep.write(f'   - {cls_name}: {class_counts.get(cls_name, 0)}\n')
         rep.write(f'\n3. Putative Higher-Rank Viral Taxonomy Assigned (Order/Family/Kingdom): {tax_assigned_count}/{len(candidate_rows)}\n')
         if tax_assigned_count == 0 and len(candidate_rows) > 0:
-            rep.write('   Tip: Run `python scripts/setup_databases.py --db-dir ./dbs --preset discovery_only`\n')
-            rep.write('   and pass `-c ./dbs/databases.config --run_viral_protein_blast --run_viral_hmm` to\n')
+            rep.write('   Tip: Run `nextflow run navduhan/metanextviro --setup_databases --db_dir ~/.metanextviro/dbs -profile conda`\n')
+            rep.write('   and pass `--run_viral_protein_blast --run_viral_hmm` to\n')
             rep.write('   assign viral Order and Family to VirFinder and dark-matter candidates.\n')
         rep.write('\nNote: Candidate classifications separate sequence detection from confirmed\n')
         rep.write('host infection. Inspect read breadth, EVE/provirus flags, and phylogenies before\n')

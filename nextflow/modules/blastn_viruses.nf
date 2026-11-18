@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Aligns assembled contigs against the viral nucleotide reference database using blastn and runs process_blast_results.py to produce sorted best-hit and multi-HSP tables.
 
 process blastn_viruses {
     tag "$id"  // Tag the task with the query ID for traceability
@@ -57,7 +59,7 @@ process blastn_viruses {
     echo " Processing BLAST results for sample: $id"
     
     # Run Python script to process the BLAST results
-    python3 ${workflow.projectDir}/nextflow/bin/process_blast_results.py \
+    python3 ${workflow.projectDir}/bin/process_blast_results.py \
         -b ${id}_raw_viruses.txt \
         -f ${fasta_file} \
         -p ${id} \

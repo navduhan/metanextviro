@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Main MetaNextViro workflow that connects input parsing, QC, trimming, host depletion, assembly, Kraken2 profiling, BLAST annotation, coverage, contig organization, discovery, and final reporting.
 
 include { INPUT_PARSER } from '../subworkflow/input_parser'
 include { QUALITY } from '../subworkflow/quality.nf'

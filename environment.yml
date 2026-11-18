@@ -1,3 +1,7 @@
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+# Description: Defines the Conda environment and Bioconda/conda-forge software dependencies required to run MetaNextViro workflows and helper scripts.
+
 name: metanextviro
 channels:
   - bioconda

@@ -1,4 +1,7 @@
-// Optional phylogenetic placement of novel candidate ORFs with MAFFT + FastTree / IQ-TREE
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Aligns promoted candidate viral hallmark ORFs against curated reference proteins with MAFFT and builds a maximum-likelihood phylogenetic tree using FastTree or IQ-TREE.
+
 process novel_phylogeny {
     tag "$id"
     label 'medium'

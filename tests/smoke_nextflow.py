@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Run tiny local tools and Nextflow checks; no production data or HPC jobs.
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""End-to-end local smoke test executing MEGAHIT, BLAST+, DIAMOND, Bowtie2, SAMtools, Nextflow resume, publishing modes, and log-preserving cleanup on synthetic data in a temporary directory.
 
 Run inside the pipeline environment: python tests/smoke_nextflow.py
-Requires Nextflow/Java, MEGAHIT, BLAST+, DIAMOND, Bowtie2, SAMtools and Python dependencies.
-All fixtures, databases and outputs are generated under a temporary directory.
+Requires Nextflow, Java, MEGAHIT, BLAST+, DIAMOND, Bowtie2, SAMtools, and Python dependencies.
 """
+
 import csv
 import hashlib
 import re
@@ -174,7 +176,7 @@ assert len(table(BASE / 'results/blast_results/details/sample_all_hsps_nr.tsv'))
     'r2\t0\tpartial\t1\t60\t5M\t*\t0\t0\tACGTA\tIIIII\n')
 run(['samtools','sort','-o','tiny.bam','tiny.sam'], 'samtools_sort')
 run(['samtools','index','tiny.bam'], 'samtools_index')
-run(['bash',ROOT / 'nextflow/bin/calculate_contig_coverage.sh','tiny.bam','coverage.tsv','idxstats.tsv'], 'coverage')
+run(['bash',ROOT / 'bin/calculate_contig_coverage.sh','tiny.bam','coverage.tsv','idxstats.tsv'], 'coverage')
 stats = {row['Contig']: row for row in table(BASE / 'coverage.tsv')}
 assert float(stats['partial']['Average_Coverage']) == 1
 assert float(stats['partial']['Coverage_Breadth']) == 50
@@ -205,7 +207,7 @@ expected_results = checksums(BASE / 'results')
 shutil.copytree(BASE / 'results', BASE / 'transferred_results')
 assert checksums(BASE / 'transferred_results') == expected_results
 run_name = re.search(r'Launching .*?\[([^]]+)\]', blastx_run).group(1)
-cleanup = [sys.executable, ROOT / 'scripts/cleanup_work.py', '--run', run_name,
+cleanup = [sys.executable, ROOT / 'bin/cleanup_work.py', '--run', run_name,
            '--results', BASE / 'results', '--launch-dir', BASE]
 work_bams = [path for path in (BASE / 'work').glob('*/*/sample.bam') if not path.is_symlink()]
 assert work_bams

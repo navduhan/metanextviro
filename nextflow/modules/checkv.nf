@@ -1,4 +1,7 @@
-// CheckV viral genome completion and host-contamination assessment
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Runs CheckV end_to_end on assembled or triaged contigs to estimate viral genome completeness, quality tier, host gene counts, and provirus boundaries.
+
 process checkv {
     tag "$id"
     label 'medium'

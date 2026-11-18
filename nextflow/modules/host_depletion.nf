@@ -1,4 +1,7 @@
-// Optional pre-assembly host read depletion via Bowtie2 + SAMtools
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Aligns trimmed paired reads to a host reference genome with Bowtie2 and extracts unmapped read pairs with SAMtools before de novo assembly.
+
 process host_depletion {
     tag "$id"
     label 'medium'

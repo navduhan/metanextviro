@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Preview cleanup of a successful named Nextflow run, keeping its execution logs."""
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Previews and executes log-preserving cleanup of task work files for a completed Nextflow run. Verifies run status and checks that published results contain real files before calling nextflow clean."""
+
 import argparse
 import csv
 import shlex

@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Assembles paired-end reads de novo with MEGAHIT and standardizes output contig headers using rename_contigs.py.
 
 process megahit {
     tag "$id"  // Tag the task with the sample ID for traceability
@@ -85,7 +87,7 @@ EOF
     echo " Renaming contig headers for sample: $id"
 
     # Rename the contig headers
-    python3 ${workflow.projectDir}/nextflow/bin/rename_contigs.py \\
+    python3 ${workflow.projectDir}/bin/rename_contigs.py \\
         -i megahit_assembly/${id}/${id}.contigs.fa \\
         -o megahit_assembly/${id}/${id}_metanextviro_megahit_contigs.fa \\
         -s megahit

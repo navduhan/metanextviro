@@ -1,4 +1,7 @@
-// Download, verify, and index minimal reference databases on the local submission node
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Runs setup_databases.py on the local submission node to download, verify, and index the selected MetaNextViro reference database preset.
+
 process setup_databases {
     tag "$db_preset"
     executor 'local'
@@ -17,7 +20,7 @@ process setup_databases {
     def forceArg = params.db_force ? '--force' : ''
     """
     set -euo pipefail
-    python3 ${workflow.projectDir}/scripts/setup_databases.py \
+    python3 ${workflow.projectDir}/bin/setup_databases.py \
         --db-dir "${target_db_dir}" \
         --preset "${db_preset}" \
         --threads ${task.cpus} \

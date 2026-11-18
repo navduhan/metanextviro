@@ -1,4 +1,7 @@
-// Optional viral hallmark profile-HMM scan with VOGDB/ICTV taxonomic lineage resolution
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Searches translated candidate ORFs against viral hallmark profile HMMs with hmmsearch and resolves HMM taxonomic lineages using parse_discovery_hits.py.
+
 process viral_hmm {
     tag "$id"
     label 'medium'
@@ -42,7 +45,7 @@ process viral_hmm {
         : > ${id}_raw_hmm_domtbl.txt
     fi
 
-    python3 ${workflow.projectDir}/nextflow/bin/parse_discovery_hits.py \
+    python3 ${workflow.projectDir}/bin/parse_discovery_hits.py \
         --mode hmm \
         -i ${id}_raw_hmm_domtbl.txt \
         -o ${id}_hallmark_hmm_hits.tsv \

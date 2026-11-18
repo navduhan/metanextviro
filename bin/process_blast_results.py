@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Retain BLAST HSPs, summarize query intervals, and export sorted TSV/XLSX reports."""
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Merges multi-HSP BLASTN, BLASTX, and DIAMOND intervals per contig using exact coordinate union, resolves NCBI lowest common ancestor lineages, and exports descending-sorted TSV and XLSX tables."""
 
 import argparse
 import csv

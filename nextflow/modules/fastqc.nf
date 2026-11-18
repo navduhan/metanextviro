@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Runs FastQC on paired-end sequencing reads to produce per-sample HTML and ZIP read quality reports.
 
 process fastqc {
     tag "$id"  // Tagging process with sample ID for better traceability

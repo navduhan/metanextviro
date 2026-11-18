@@ -1,4 +1,7 @@
-// Coverage analysis (read mapping and stats)
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Builds a Bowtie2 index for assembled contigs, maps trimmed paired reads with SAMtools sorting, and runs calculate_contig_coverage.sh to compute whole-contig depth and breadth.
+
 process coverage {
     tag "$id"
     label 'medium'
@@ -29,6 +32,6 @@ process coverage {
     samtools index ${id}.bam
 
     # Generate contig-level coverage stats
-    ${projectDir}/nextflow/bin/calculate_contig_coverage.sh ${id}.bam coverage_${id}.txt ${id}.idxstats.txt
+    ${projectDir}/bin/calculate_contig_coverage.sh ${id}.bam coverage_${id}.txt ${id}.idxstats.txt
     """
 } 

@@ -1,5 +1,6 @@
 // Author: Naveen Duhan
-// Taxonomic profiling subworkflow (Kraken2 + Krona)
+// License: MIT (see LICENSE)
+// Description: Runs Kraken2 read-level classification and passes each Kraken2 report to Krona for visualization.
 
 include { kraken2 } from '../modules/kraken2.nf'
 include { krona } from '../modules/krona.nf'

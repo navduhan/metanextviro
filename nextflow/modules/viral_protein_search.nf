@@ -1,4 +1,7 @@
-// Optional ultra-sensitive DIAMOND protein search against curated viral protein DB with NCBI taxonomy
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Aligns translated candidate ORFs against a RefSeq viral protein DIAMOND database and attaches NCBI lineages using parse_discovery_hits.py.
+
 process viral_protein_search {
     tag "$id"
     label 'medium'
@@ -37,7 +40,7 @@ process viral_protein_search {
         : > ${id}_raw_viral_protein.txt
     fi
 
-    python3 ${workflow.projectDir}/nextflow/bin/parse_discovery_hits.py \
+    python3 ${workflow.projectDir}/bin/parse_discovery_hits.py \
         --mode viral_protein \
         -i ${id}_raw_viral_protein.txt \
         -o ${id}_viral_protein_hits.tsv \

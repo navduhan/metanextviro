@@ -1,12 +1,15 @@
 #!/usr/bin/env nextflow
 
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Entry point for the MetaNextViro Nextflow DSL2 pipeline. Validates runtime parameters, supports standalone samplesheet creation and reference database setup, and launches the main viral metagenomics workflow.
+
 // Enable DSL 2 syntax
 nextflow.enable.dsl = 2
 
-// Author: Naveen Duhan
-
 include { metanextviro } from './nextflow/workflow/metanextviro.nf'
 include { setup_databases } from './nextflow/modules/setup_databases.nf'
+include { create_samplesheet } from './nextflow/modules/create_samplesheet.nf'
 
 workflow {
     // Display help message if requested
@@ -29,21 +32,35 @@ workflow {
     }
 
     def targetDbDir = params.db_dir ? file(params.db_dir).toAbsolutePath().toString() : null
+    def resolvedReadsDir = params.reads_dir ?: params.fastq_dir
 
-    // Standalone database setup mode (no --input samplesheet required)
-    if (params.setup_databases && !params.input) {
+    // Standalone samplesheet generation mode (no databases required)
+    if (params.create_samplesheet) {
+        if (!resolvedReadsDir) {
+            error '--create_samplesheet requires --reads_dir <fastq_directory>.'
+        }
+        def absReadsDir = file(resolvedReadsDir, checkIfExists: true).toAbsolutePath().toString()
+        def targetSheet = file(params.samplesheet ?: 'samplesheet.csv').toAbsolutePath()
+        create_samplesheet(
+            Channel.of(absReadsDir),
+            Channel.of(targetSheet.parent.toString()),
+            Channel.of(targetSheet.fileName.toString())
+        )
+    } else if (params.setup_databases && !params.input && !resolvedReadsDir) {
+        // Standalone database setup mode (no --input samplesheet required)
         if (!targetDbDir) {
             error '--setup_databases requires --db_dir <directory>.'
         }
         setup_databases(Channel.of(targetDbDir), Channel.of(params.db_preset))
     } else {
-        // Analysis mode (with optional automatic pre-run database download)
-        if (!params.input) {
-            error 'Error: Input samplesheet not specified! Use --input <samplesheet> to run analysis, or --setup_databases to prepare databases.'
+        // Analysis mode (accepts --input <samplesheet> OR --reads_dir <fastq_dir>)
+        if (!params.input && !resolvedReadsDir) {
+            error 'Error: Input not specified! Pass --input <samplesheet>, --reads_dir <fastq_dir>, --create_samplesheet --reads_dir <fastq_dir>, or --setup_databases.'
         }
 
         def checkPathParamList = [
             params.input,
+            resolvedReadsDir,
             params.adapters,
             params.taxonomy_db,
             params.host_fasta,
@@ -103,11 +120,26 @@ workflow {
             validateHardLinks(file(params.outdir), workflow.workDir)
         }
 
+        // Build input samplesheet channel from --input or auto-generate from --reads_dir
+        def rawInputCh
+        if (params.input) {
+            rawInputCh = Channel.value(file(params.input))
+        } else {
+            def absReadsDir = file(resolvedReadsDir).toAbsolutePath().toString()
+            def autoSheetOutDir = file(params.outdir).toAbsolutePath().toString()
+            create_samplesheet(
+                Channel.of(absReadsDir),
+                Channel.of(autoSheetOutDir),
+                Channel.of('samplesheet.csv')
+            )
+            rawInputCh = create_samplesheet.out.csv
+        }
+
         if (willDownloadDbs) {
             setup_databases(Channel.of(targetDbDir), Channel.of(params.db_preset))
-            ch_input = setup_databases.out.ready_db_dir.map { _ready -> file(params.input) }
+            ch_input = setup_databases.out.ready_db_dir.combine(rawInputCh).map { _ready, sheetFile -> sheetFile }
         } else {
-            ch_input = Channel.value(file(params.input))
+            ch_input = rawInputCh
         }
 
         metanextviro(ch_input)
@@ -146,16 +178,30 @@ def helpMSG() {
                                                 Author : Naveen Duhan (naveen.duhan@outlook.com)
     ______________________________________________________________________________________________________________________________________________
 
-    Quick Start (Direct GitHub or CLI execution):
+    Quick Start (Nextflow or CLI execution):
 
-    # 1. One-time full viral database download & setup (~4.0 GB default, runs via Nextflow):
-    nextflow run navduhan/metanextviro --setup_databases --db_dir ~/.metanextviro/dbs -profile conda
+    # 0. One-time pull so you can run short 'nextflow run metanextviro' anywhere:
+    nextflow pull navduhan/metanextviro
 
-    # 2. Routine targeted virus run (auto-discovers databases from --db_dir):
-    nextflow run navduhan/metanextviro --input samplesheet.csv --outdir results -profile conda
+    # 1. Generate a validated samplesheet from a directory of paired FASTQ files:
+    nextflow run metanextviro --create_samplesheet --reads_dir ./raw_fastqs --samplesheet samplesheet.csv
 
-    # 3. Novel virus discovery + VirFinder (with automatic Order/Family assignment):
-    nextflow run navduhan/metanextviro --input samplesheet.csv --discover_novel_viruses --run_virfinder -profile conda
+    # 2. One-time full viral database download & setup (~4.0 GB default):
+    nextflow run metanextviro --setup_databases --db_dir ~/.metanextviro/dbs -profile conda
+
+    # 3. Routine targeted virus run (from --input samplesheet OR directly from --reads_dir):
+    nextflow run metanextviro --input samplesheet.csv --outdir results -profile conda
+    nextflow run metanextviro --reads_dir ./raw_fastqs --outdir results -profile conda
+
+    # 4. Novel virus discovery + VirFinder (with automatic Order/Family assignment):
+    nextflow run metanextviro --input samplesheet.csv --discover_novel_viruses --run_virfinder -profile conda
+
+    Samplesheet & Input Options:
+    --input              Path to an existing samplesheet (CSV, TSV, XLS, XLSX)
+    --reads_dir          Directory of paired FASTQ files (runs directly or pairs with --create_samplesheet)
+    --create_samplesheet Generate a samplesheet CSV from --reads_dir and exit
+    --samplesheet        Output CSV path for --create_samplesheet (default: 'samplesheet.csv')
+    --recursive_reads    Recursively search subdirectories under --reads_dir (default: false)
 
     Database Management Options:
     --db_dir            Directory for managed databases (default: ~/.metanextviro/dbs)

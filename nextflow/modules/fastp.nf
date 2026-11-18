@@ -1,4 +1,7 @@
-// fastp paired-end trimming
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Performs paired-end adapter removal and quality trimming using fastp and emits trimmed FASTQ reads alongside HTML and JSON QC reports.
+
 process fastp {
     tag "$id"
     label 'low'

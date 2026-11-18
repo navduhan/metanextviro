@@ -1,3 +1,7 @@
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Unit tests verifying cohort and per-sample PDF and HTML report generation, sample prefix isolation, symlink traversal, and Matplotlib PDF fallback."""
+
 import importlib.util
 import json
 import sys
@@ -6,7 +10,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BIN_DIR = ROOT / 'nextflow' / 'bin'
+BIN_DIR = ROOT / 'bin'
 if str(BIN_DIR) not in sys.path:
     sys.path.insert(0, str(BIN_DIR))
 

@@ -1,5 +1,6 @@
 // Author: Naveen Duhan
-// Generate Cohort and Sample-Wise PDF + Standalone Interactive HTML reports
+// License: MIT (see LICENSE)
+// Description: Stages sample outputs and runs generate_reports.py to publish cohort summary and per-sample PDF and standalone HTML reports.
 
 process final_report {
     tag "cohort_and_samples"
@@ -26,7 +27,7 @@ process final_report {
 
     python3 -c "import base64, pathlib; pathlib.Path('run_meta.json').write_bytes(base64.b64decode('${run_meta_b64}'))"
 
-    python3 ${workflow.projectDir}/nextflow/bin/generate_reports.py \
+    python3 ${workflow.projectDir}/bin/generate_reports.py \
         --samples ${sampleArgs} \
         --input-dir inputs \
         --output-dir . \

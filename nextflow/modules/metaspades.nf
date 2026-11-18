@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Assembles paired-end reads de novo with metaSPAdes and standardizes scaffold headers using rename_contigs.py.
 
 process metaspades {
     tag "$id"  // Tag the task with the sample ID for traceability
@@ -78,7 +80,7 @@ process metaspades {
     echo " Renaming contig headers for sample: $id"
 
     # Rename scaffolds to contigs using the Python script
-    python3 ${workflow.projectDir}/nextflow/bin/rename_contigs.py \\
+    python3 ${workflow.projectDir}/bin/rename_contigs.py \\
         -i metaspades_assembly/${id}/scaffolds.fasta \\
         -o metaspades_assembly/${id}/${id}_metanextviro_metaspades_contigs.fa \\
         -s MetaSPAdes

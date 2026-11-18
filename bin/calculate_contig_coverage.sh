@@ -1,5 +1,8 @@
 #!/bin/bash
-# Whole-contig mean depth and breadth, including uncovered positions.
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+# Description: Calculates whole-contig mean read depth and coverage breadth from a coordinate-sorted, indexed BAM file. Uses samtools idxstats and samtools depth so uncovered positions and zero-read contigs stay included.
+
 set -euo pipefail
 
 if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then

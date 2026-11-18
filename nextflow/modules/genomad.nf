@@ -1,4 +1,7 @@
-// Optional geNomad marker + neural virus/plasmid/provirus classification
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Runs optional geNomad end-to-end classification on candidate contigs to separate viral genomes, plasmids, and integrated proviruses.
+
 process genomad {
     tag "$id"
     label 'medium'

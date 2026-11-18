@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""
-Script to rename headers in a FASTA file for consistent naming.
-Author: Naveen Duhan
-"""
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Rewrites assembled FASTA headers into uniform MetaNextViro contig identifiers containing the assembler name, sequential index, and sequence length."""
 
 import argparse
 from Bio import SeqIO

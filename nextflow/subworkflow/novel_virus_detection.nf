@@ -1,5 +1,6 @@
 // Author: Naveen Duhan
-// Automated post-BLAST contig triage and multi-evidence novel virus discovery subworkflows
+// License: MIT (see LICENSE)
+// Description: Defines the post-BLAST contig triage subworkflow and the opt-in divergent virus discovery subworkflow combining ORF scanning, HMM, protein, Foldseek, geNomad, CheckV, VirFinder, and phylogenetic steps.
 
 include { viral_hmm } from '../modules/viral_hmm.nf'
 include { viral_protein_search } from '../modules/viral_protein_search.nf'
@@ -27,7 +28,7 @@ process TRIAGE_CONTIGS {
     def allFlag = params.discovery_all_contigs ? '--include_all_contigs' : ''
     def blastArg = blast_hsps ? "--blast_hsps ${blast_hsps}" : ''
     """
-    python3 ${workflow.projectDir}/nextflow/bin/triage_contigs.py \
+    python3 ${workflow.projectDir}/bin/triage_contigs.py \
         --fasta_file ${contigs_fasta} \
         ${blastArg} \
         --prefix ${id} \
@@ -56,7 +57,7 @@ process SCAN_VIRAL_ARCHITECTURE {
 
     script:
     """
-    python3 ${workflow.projectDir}/nextflow/bin/scan_viral_architecture.py \
+    python3 ${workflow.projectDir}/bin/scan_viral_architecture.py \
         --fasta_file ${candidate_contigs} \
         --prefix ${id} \
         --min_orf_aa ${params.novel_min_orf_aa}
@@ -109,7 +110,7 @@ process SYNTHESIZE_NOVEL_VIRUSES {
         .join(' ')
     def vfTaxArg = evMap.containsKey('virfinder') ? "--virfinder_tax_prefix 'virfinder_${id}_taxonomy'" : ''
     """
-    python3 ${workflow.projectDir}/nextflow/bin/synthesize_novel_viruses.py \
+    python3 ${workflow.projectDir}/bin/synthesize_novel_viruses.py \
         --contigs_fasta '${contigs_fasta}' \
         --candidate_orfs '${evMap['orfs']}' \
         --triage_manifest '${triage_manifest}' \

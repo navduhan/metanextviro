@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Routes assembled contigs to the requested BLASTN viral, NCBI nt, and DIAMOND or BLASTX nr modules and collects their best-hit and multi-HSP outputs.
 
 include { blastn } from "../modules/blastn"
 include { blastn_viruses } from "../modules/blastn_viruses"

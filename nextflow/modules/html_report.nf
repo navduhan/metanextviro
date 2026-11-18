@@ -1,4 +1,7 @@
-// Comprehensive interactive HTML report
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Builds a lightweight summary HTML index linking FastQC, Kraken2, coverage, CheckV, and VirFinder result files in the output directory.
+
 process html_report {
     label 'process_medium'
     publishDir "${params.outdir}/final_report", mode: params.publish_mode, overwrite: true, failOnError: true

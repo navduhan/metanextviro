@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Aligns assembled contigs against the NCBI nt nucleotide database using blastn and runs process_blast_results.py to export interval-merged TSV and XLSX summaries.
 
 process blastn {
     tag "$id"  // Tag the task with the query ID for traceability
@@ -52,7 +54,7 @@ process blastn {
     echo " Processing BLAST results for sample: $id"
 
     # Run Python script to process the BLAST results
-    python3 ${workflow.projectDir}/nextflow/bin/process_blast_results.py \
+    python3 ${workflow.projectDir}/bin/process_blast_results.py \
         -b ${id}_raw_nt.txt \
         -f ${fasta_file} \
         -p ${id} \

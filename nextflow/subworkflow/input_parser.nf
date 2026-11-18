@@ -1,4 +1,6 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Reads CSV, TSV, or Excel samplesheets, verifies that input FASTQ files exist, and emits paired sample ID and read channels.
 
 // Utility function to check if a file has a specific extension
 def hasExtension(file, extensions) {
@@ -19,9 +21,10 @@ workflow INPUT_PARSER {
 
     main:
     def file_extensions = ["csv", "tsv", "xls", "xlsx"]
+    def sheetRef = params.input ?: (params.samplesheet ?: "samplesheet.csv")
 
-    if (!hasExtension(params.input, file_extensions)) {
-        exit 1, "Unsupported input format: ${params.input}. Supported formats are CSV, TSV, XLS, XLSX."
+    if (!hasExtension(sheetRef, file_extensions)) {
+        exit 1, "Unsupported input format: ${sheetRef}. Supported formats are CSV, TSV, XLS, XLSX."
     }
 
     ch_input_rows = (samplesheet instanceof java.nio.file.Path || samplesheet instanceof File || samplesheet instanceof CharSequence)
@@ -29,11 +32,11 @@ workflow INPUT_PARSER {
         : samplesheet
 
     // Process file based on its type
-    if (hasExtension(params.input, "csv")) {
+    if (hasExtension(sheetRef, "csv")) {
         ch_input_rows = ch_input_rows.splitCsv(header: true)
-    } else if (hasExtension(params.input, "tsv")) {
+    } else if (hasExtension(sheetRef, "tsv")) {
         ch_input_rows = ch_input_rows.splitCsv(header: true, sep: '\t')
-    } else if (hasExtension(params.input, ["xls", "xlsx"])) {
+    } else if (hasExtension(sheetRef, ["xls", "xlsx"])) {
         ch_input_rows = ch_input_rows
             .exec {
                 """

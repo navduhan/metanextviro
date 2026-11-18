@@ -1,6 +1,7 @@
 // Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Converts Kraken2 taxonomic reports into interactive Krona HTML charts using ktImportTaxonomy.
 
-// Krona taxonomic visualization
 process krona {
     tag "$id"  // Tag each task with the sample ID for traceability
 

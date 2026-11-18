@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Parse HMMER, DIAMOND viral protein, and Foldseek hits with full ICTV taxonomic lineages."""
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+"""Parses HMMER profile hits, DIAMOND viral protein alignments, and Foldseek structural matches and attaches resolved ICTV taxonomic lineages for downstream candidate scoring."""
 
 import argparse
 import csv

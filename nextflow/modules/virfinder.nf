@@ -1,4 +1,7 @@
-// Enhanced VirFinder viral classification (FDR q-value + complexity QC + descending sort)
+// Author: Naveen Duhan
+// License: MIT (see LICENSE)
+// Description: Runs run_virfinder.R on assembled or triaged contigs to compute 8-mer viral scores, FDR q-values, and sequence complexity flags.
+
 process virfinder {
     tag "$id"
     label 'low'
@@ -14,7 +17,7 @@ process virfinder {
 
     script:
     """
-    Rscript ${workflow.projectDir}/nextflow/bin/run_virfinder.R \
+    Rscript ${workflow.projectDir}/bin/run_virfinder.R \
         ${contigs} \
         virfinder_${id}_full.txt \
         virfinder_${id}_filtered.txt \
