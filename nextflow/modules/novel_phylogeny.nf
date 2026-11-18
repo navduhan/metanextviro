@@ -5,6 +5,8 @@
 process novel_phylogeny {
     tag "$id"
     label 'medium'
+    conda "${projectDir}/envs/discovery.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     publishDir "${params.outdir}/novel_virus_detection/phylogeny", mode: params.publish_mode, overwrite: true, failOnError: true
 

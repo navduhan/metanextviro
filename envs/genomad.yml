@@ -1,0 +1,10 @@
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+# Description: Isolated geNomad environment for viral, plasmid, and provirus classification when params.run_genomad is enabled.
+
+name: metanextviro-genomad
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - genomad

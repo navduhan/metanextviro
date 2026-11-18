@@ -6,6 +6,8 @@ process krona {
     tag "$id"  // Tag each task with the sample ID for traceability
 
     label 'low'  // Assign a label for resource management
+    conda "${projectDir}/envs/core.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     publishDir "${params.outdir}/krona_results", mode: params.publish_mode, overwrite: true, failOnError: true  // Define output directory
 

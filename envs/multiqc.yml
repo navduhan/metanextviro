@@ -1,0 +1,10 @@
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+# Description: Isolated MultiQC environment for optional quality report aggregation.
+
+name: metanextviro-multiqc
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - multiqc

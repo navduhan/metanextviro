@@ -1,44 +1,13 @@
 # Author: Naveen Duhan
 # License: MIT (see LICENSE)
-# Description: Defines the Conda environment and Bioconda/conda-forge software dependencies required to run MetaNextViro workflows and helper scripts.
+# Description: Lightweight Conda launcher environment installing Nextflow, OpenJDK 21, and Python so users can run MetaNextViro with conda, mamba, docker, singularity, or apptainer profiles.
 
 name: metanextviro
 channels:
-  - bioconda
   - conda-forge
-  - defaults
+  - bioconda
 dependencies:
-  - python=3.9
-  - nextflow
+  - python=3.11
+  - nextflow>=22.10.0
   - openjdk=21
-  - fastqc
-  - multiqc
-  - fastp
-  - flexbar
-  - trim-galore
-  - megahit
-  - spades
-  - blast
-  - diamond
-  - kraken2
-  - krona
-  - cd-hit
-  - hmmer
-  - mafft
-  - fasttree
-  - quast
-  - bowtie2
-  - samtools
-  - bedtools
-  - ete3
-  - biopython
-  - pandas
-  - openpyxl
-  - reportlab
-  - matplotlib
-  - seaborn
-  - r-base =4.3.1
-  - r-virfinder
-  - checkv
-  - genomad
   - pip

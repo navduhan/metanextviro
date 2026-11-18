@@ -10,6 +10,8 @@ include { novel_phylogeny } from '../modules/novel_phylogeny.nf'
 process TRIAGE_CONTIGS {
     tag "$id"
     label 'low'
+    conda "${projectDir}/envs/core.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     publishDir "${params.outdir}/novel_virus_detection/details",
         mode: params.publish_mode,
@@ -42,6 +44,8 @@ process TRIAGE_CONTIGS {
 process SCAN_VIRAL_ARCHITECTURE {
     tag "$id"
     label 'low'
+    conda "${projectDir}/envs/core.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     publishDir "${params.outdir}/novel_virus_detection/details",
         mode: params.publish_mode,
@@ -67,6 +71,8 @@ process SCAN_VIRAL_ARCHITECTURE {
 process SYNTHESIZE_NOVEL_VIRUSES {
     tag "$id"
     label 'low'
+    conda "${projectDir}/envs/core.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     publishDir "${params.outdir}/novel_virus_detection",
         mode: params.publish_mode,

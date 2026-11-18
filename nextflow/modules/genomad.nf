@@ -5,6 +5,8 @@
 process genomad {
     tag "$id"
     label 'medium'
+    conda "${projectDir}/envs/genomad.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://quay.io/biocontainers/genomad:1.13.0--pyhdfd78af_0' : 'quay.io/biocontainers/genomad:1.13.0--pyhdfd78af_0' }"
 
     publishDir "${params.outdir}/genomad", mode: params.publish_mode, overwrite: true, failOnError: true
 

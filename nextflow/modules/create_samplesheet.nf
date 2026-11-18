@@ -6,6 +6,7 @@ process create_samplesheet {
     tag "$reads_dir"
     executor 'local'
     cpus 1
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     publishDir "${out_dir}", mode: 'copy', overwrite: true, failOnError: true
 

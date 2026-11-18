@@ -6,6 +6,8 @@ process kraken2 {
     tag "$id"  // Tag each task with the sample ID for better traceability
 
     label 'high'  // Assign a label for resource management
+    conda "${projectDir}/envs/core.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     publishDir "${params.outdir}/kraken2_results", mode: params.publish_mode, overwrite: true, failOnError: true  // Define and manage the output directory
 

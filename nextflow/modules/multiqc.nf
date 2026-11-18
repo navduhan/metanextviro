@@ -4,6 +4,8 @@
 
 process multiqc {
     label 'process_medium'
+    conda "${projectDir}/envs/multiqc.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://quay.io/biocontainers/multiqc:1.35--pyhdfd78af_2' : 'quay.io/biocontainers/multiqc:1.35--pyhdfd78af_2' }"
     publishDir "${params.outdir}/multiqc", mode: params.publish_mode, overwrite: true, failOnError: true
 
     input:

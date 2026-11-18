@@ -1,0 +1,10 @@
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+# Description: Isolated CheckV environment for viral genome completeness and host-contamination assessment when params.run_checkv is enabled.
+
+name: metanextviro-checkv
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - checkv

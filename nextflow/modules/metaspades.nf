@@ -6,6 +6,8 @@ process metaspades {
     tag "$id"  // Tag the task with the sample ID for traceability
 
     label 'vhigh'  // Assign a label for resource management
+    conda "${projectDir}/envs/assembly_extra.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     publishDir "${params.outdir}", mode: params.publish_mode, overwrite: true, failOnError: true, pattern: 'metaspades_assembly/*'  // Define output directory
 

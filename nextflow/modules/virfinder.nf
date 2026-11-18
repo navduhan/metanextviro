@@ -5,6 +5,8 @@
 process virfinder {
     tag "$id"
     label 'low'
+    conda "${projectDir}/envs/virfinder.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://quay.io/biocontainers/r-virfinder:1.1--r44h503566f_8' : 'quay.io/biocontainers/r-virfinder:1.1--r44h503566f_8' }"
 
     publishDir "${params.outdir}/virfinder", mode: params.publish_mode, overwrite: true, failOnError: true
 

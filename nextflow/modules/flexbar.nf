@@ -5,6 +5,8 @@
 process flexbar {
     tag "$id"  // Tagging process with sample ID for traceability
     label 'low'
+    conda "${projectDir}/envs/flexbar.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://quay.io/biocontainers/flexbar:3.5.0--hdfd68b8_12' : 'quay.io/biocontainers/flexbar:3.5.0--hdfd68b8_12' }"
 
     publishDir "${params.outdir}", mode: params.publish_mode, overwrite: true, failOnError: true
 

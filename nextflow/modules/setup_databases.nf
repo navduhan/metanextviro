@@ -6,6 +6,8 @@ process setup_databases {
     tag "$db_preset"
     executor 'local'
     cpus 4
+    conda "${projectDir}/envs/core.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     input:
         val target_db_dir

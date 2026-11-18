@@ -221,6 +221,7 @@ def helpMSG() {
     --blast_max_target_seqs Maximum subject sequences reported per query (default: 50)
     --blastx_tool       Protein search tool: diamond (default) or blastx
     --organize_contigs  Enable contig organization using selected BLAST results (default: false)
+    --conda_cache_dir   Shared cache directory for tiered Conda/Mamba environments (default: ~/.metanextviro/conda_envs)
     --account           SLURM account to charge (optional; uses scheduler default when omitted)
 
     Opt-in Novel Virus Discovery & VirFinder Options (disabled by default):

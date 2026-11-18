@@ -5,6 +5,8 @@
 process coverage {
     tag "$id"
     label 'medium'
+    conda "${projectDir}/envs/core.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     publishDir "${params.outdir}/coverage", mode: params.publish_mode, overwrite: true, failOnError: true
 

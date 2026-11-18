@@ -102,9 +102,15 @@ graph TD
 ## Quick Start
 
 ### Prerequisites
-- Nextflow (>=21.10.3)
-- Java (>=8)
-- Conda, Docker, or Singularity
+- Nextflow (>=22.10.0)
+- Java (17–26)
+- Conda/Mamba, Docker, Singularity, or Apptainer
+
+If Nextflow is not installed yet, create the lightweight launcher environment once:
+```bash
+conda create -n metanextviro -c conda-forge -c bioconda nextflow openjdk=21
+conda activate metanextviro
+```
 
 ### Basic Usage (No Manual Git Clone Required)
 ```bash
@@ -144,6 +150,14 @@ metanextviro pull
 metanextviro --create_samplesheet --reads_dir ./raw_fastqs
 metanextviro --setup_databases -profile conda
 metanextviro --input samplesheet.csv -profile conda
+
+# On a SLURM HPC cluster with Conda/Mamba (shared --conda_cache_dir readable by compute nodes):
+nextflow run metanextviro \
+  --input samplesheet.csv \
+  --outdir results \
+  --conda_cache_dir /scratch/$USER/metanextviro_envs \
+  --account <slurm_account> \
+  -profile slurm,mamba
 
 # On SDSU HPC cluster (uses pre-configured /mmfs1 reference paths + SLURM):
 nextflow run metanextviro \
@@ -189,21 +203,24 @@ sample2,/path/to/sample2_R1.fastq.gz,/path/to/sample2_R2.fastq.gz
 
 ## Prerequisites
 
-- Nextflow (>=21.10.3)
-- Java (>=8)
-- Python (>=3.8)
-- Conda (recommended)
-- Docker or Singularity (optional, for containerized execution)
+- Nextflow (>=22.10.0)
+- Java (17–26)
+- Python (>=3.9)
+- Conda or Mamba (recommended for `-profile conda` / `-profile mamba`)
+- Docker, Singularity, or Apptainer (optional, for containerized execution)
 
-### Required Tools and Packages
-All dependencies can be installed using the provided `environment.yml` file or automatically with the conda profile.
+### Tiered Conda Environments (`envs/`)
+MetaNextViro uses tiered Conda definitions under `envs/` that Nextflow builds lazily and caches in `--conda_cache_dir` (default: `~/.metanextviro/conda_envs`) when running with `-profile conda` or `-profile mamba`:
 
-- FastQC, fastp, flexbar, trim-galore
-- MEGAHIT, SPAdes, BLAST+, DIAMOND, Kraken2, QUAST
-- Bowtie2, Samtools, Bedtools
-- CheckV only when `--run_checkv` is enabled; VirFinder (R) only when `--run_virfinder` is enabled
-- Python: biopython, pandas, openpyxl, matplotlib, seaborn, ete3
-- R: r-base, r-virfinder (required only for optional VirFinder analysis)
+- `environment.yml`: Lightweight launcher environment (`nextflow`, `openjdk=21`, `python`, `pip`).
+- `envs/core.yml`: Default surveillance, BLAST/DIAMOND, Kraken2, coverage, database setup, triage, and PDF/HTML reporting (`fastqc`, `trim-galore`, `fastp`, `bowtie2`, `samtools`, `megahit`, `quast`, `kraken2`, `krona`, `blast`, `diamond`, `biopython`, `ete3`, `pandas`, `openpyxl`, `matplotlib-base`, `seaborn`, `reportlab`).
+- `envs/assembly_extra.yml`: Built only for `--assembler metaspades` or `hybrid` (`spades`, `cd-hit`).
+- `envs/virfinder.yml`: Isolated R environment built only for `--run_virfinder` (`r-base`, `r-virfinder`).
+- `envs/checkv.yml`: Isolated CheckV environment built only for `--run_checkv`.
+- `envs/genomad.yml`: Isolated geNomad environment built only for `--run_genomad`.
+- `envs/discovery.yml`: Built only for `--run_viral_hmm` or `--run_novel_phylogeny` (`hmmer`, `mafft`, `fasttree`, `iqtree`).
+- `envs/foldseek.yml`: Built only for `--run_foldseek` (`foldseek`).
+- `envs/flexbar.yml` / `envs/multiqc.yml`: Isolated environments for optional Flexbar trimming and MultiQC aggregation.
 
 ## Installation
 
@@ -615,19 +632,20 @@ results/
 
 ## Configuration
 
-- `nextflow.config`: Main configuration file.
-- `environment.yml`: Conda environment for all dependencies.
-- `Dockerfile`: (Optional) Build your own container for full reproducibility.
+- `nextflow.config`: Main configuration file, parameters (`--conda_cache_dir`, `--db_dir`), and execution profiles.
+- `environment.yml`: Lightweight Conda launcher environment (Nextflow + OpenJDK 21 + Python).
+- `envs/`: Tiered Conda environment YAMLs (`core.yml`, `assembly_extra.yml`, `virfinder.yml`, `checkv.yml`, `genomad.yml`, `discovery.yml`, `foldseek.yml`, `flexbar.yml`, `multiqc.yml`) cached in `--conda_cache_dir`.
+- `Dockerfile`: Lean Micromamba container image (`ghcr.io/navduhan/metanextviro:latest`) built automatically by GitHub Actions from core, assembly, discovery, and Foldseek environments; heavy single-tool opt-in modules (`genomad`, `checkv`, `virfinder`, `flexbar`, `multiqc`) pull pinned official BioContainers (`quay.io/biocontainers/*`).
 - `bin/`: Executable Nextflow helper scripts (automatically added to task `PATH`), database provisioning, samplesheet creation, and work-directory cleanup.
 
 ## Docker & Singularity Support
 
-- **Docker:** Use the provided Dockerfile to build an image for full reproducibility.
-- **Singularity:** On HPC, use the `singularity` profile. Nextflow will automatically convert the Docker image on the fly.
+- **Docker (`-profile docker`)**: Automatically pulls `ghcr.io/navduhan/metanextviro:latest` for core/assembly/discovery tasks and pinned official `quay.io/biocontainers/*` images for optional `genomad`, `checkv`, `virfinder`, `flexbar`, and `multiqc` modules.
+- **Singularity / Apptainer (`-profile singularity` or `-profile apptainer`)**: On HPC, Nextflow automatically pulls and converts those images on demand (combine with SLURM via `-profile slurm,singularity` or `-profile sdsu,singularity`).
 
 ### Example (HPC with SLURM and Singularity)
 ```bash
-nextflow run main.nf --input <samplesheet> --outdir <results> -profile slurm,singularity
+nextflow run metanextviro --input <samplesheet> --outdir <results> -profile slurm,singularity
 ```
 
 ## Citations

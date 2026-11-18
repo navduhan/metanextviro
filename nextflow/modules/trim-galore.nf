@@ -5,6 +5,8 @@
 process trim_galore {
     tag "$id"  // Tagging process with sample ID for traceability
     label 'low'
+    conda "${projectDir}/envs/core.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     publishDir "${params.outdir}", mode: params.publish_mode, overwrite: true, failOnError: true
 

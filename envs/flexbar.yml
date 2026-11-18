@@ -1,0 +1,10 @@
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+# Description: Isolated Flexbar environment for optional adapter and quality trimming when params.trimming_tool is flexbar.
+
+name: metanextviro-flexbar
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - flexbar

@@ -5,6 +5,8 @@
 process final_report {
     tag "cohort_and_samples"
     label 'low'
+    conda "${projectDir}/envs/core.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     publishDir "${params.outdir}/final_report", mode: params.publish_mode, overwrite: true, failOnError: true
 

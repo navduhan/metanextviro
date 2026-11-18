@@ -1,37 +1,52 @@
 # Author: Naveen Duhan
 # License: MIT (see LICENSE)
-# Description: Builds the MetaNextViro container image from Miniconda3 using environment.yml and copies the pipeline source files into /workspace.
+# Description: Builds the lean MetaNextViro container image from Micromamba using the core, assembly, discovery, and Foldseek environments; heavy single-tool opt-in modules use official BioContainers.
 
-FROM continuumio/miniconda3:4.12.0
+FROM mambaorg/micromamba:1.5.10
 
 LABEL maintainer="Naveen Duhan <naveen.duhan@outlook.com>"
 LABEL description="MetaNextViro: Viral Metagenomics Pipeline"
 
-# Set up environment
+USER root
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
-ENV PATH /opt/conda/bin:$PATH
+ENV MAMBA_ROOT_PREFIX=/opt/conda
 
-# Update system packages and clean up
-RUN apt-get update && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/apt/lists/*
+# Copy lean container environment specs first to maximize Docker layer caching
+COPY envs/core.yml envs/assembly_extra.yml envs/discovery.yml envs/foldseek.yml /tmp/envs/
 
-# Copy environment file and install conda environment
-# This is done in a single layer to optimize build caching
-COPY environment.yml /tmp/environment.yml
-RUN conda env create -f /tmp/environment.yml && \
-    conda clean -afy
+# Build each isolated tier and clear package caches after every step to keep CI disk usage low
+RUN micromamba create -y -n core -f /tmp/envs/core.yml && \
+    micromamba clean --all --yes
 
-# Activate the environment for subsequent commands
-# and set the PATH. This makes the environment's binaries available.
-SHELL ["/bin/bash", "-c"]
-RUN echo "conda activate metanextviro" >> ~/.bashrc
-ENV PATH /opt/conda/envs/metanextviro/bin:$PATH
+RUN micromamba create -y -n assembly_extra -f /tmp/envs/assembly_extra.yml && \
+    micromamba clean --all --yes
 
-# Set workdir
+RUN micromamba create -y -n discovery -f /tmp/envs/discovery.yml && \
+    micromamba clean --all --yes
+
+RUN micromamba create -y -n foldseek -f /tmp/envs/foldseek.yml && \
+    micromamba clean --all --yes && \
+    rm -rf /tmp/envs
+
+# Put wrapper shims and the core surveillance environment on PATH
+ENV PATH=/usr/local/bin:/opt/conda/envs/core/bin:/usr/bin:/bin
+
+RUN set -eu; \
+    wrap_bin() { \
+        env_name="$1"; shift; \
+        for tool in "$@"; do \
+            if [ -x "/opt/conda/envs/${env_name}/bin/${tool}" ]; then \
+                printf '#!/bin/sh\nexport PATH="/opt/conda/envs/%s/bin:$PATH"\nexec "/opt/conda/envs/%s/bin/%s" "$@"\n' \
+                    "${env_name}" "${env_name}" "${tool}" > "/usr/local/bin/${tool}"; \
+                chmod +x "/usr/local/bin/${tool}"; \
+            fi; \
+        done; \
+    }; \
+    wrap_bin assembly_extra spades.py metaspades.py cd-hit cd-hit-est; \
+    wrap_bin discovery hmmsearch hmmpress mafft FastTree fasttree iqtree iqtree2 iqtree3; \
+    wrap_bin foldseek foldseek
+
 WORKDIR /workspace
-
-# Copy the pipeline code last to leverage Docker layer caching.
-# The environment will only be rebuilt if environment.yml changes.
 COPY . /workspace
 
-# Default command
 CMD ["bash"]

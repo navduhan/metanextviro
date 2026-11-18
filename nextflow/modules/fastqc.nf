@@ -5,6 +5,8 @@
 process fastqc {
     tag "$id"  // Tagging process with sample ID for better traceability
     label 'low'
+    conda "${projectDir}/envs/core.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     // Use publishDir to save outputs in a specific directory
     publishDir "${params.outdir}", mode: params.publish_mode, overwrite: true, failOnError: true

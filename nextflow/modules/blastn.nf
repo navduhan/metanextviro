@@ -5,6 +5,8 @@
 process blastn {
     tag "$id"  // Tag the task with the query ID for traceability
     label 'high'  // Assign a label for resource management
+    conda "${projectDir}/envs/core.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     publishDir "${params.outdir}/blast_results",
         mode: params.publish_mode,

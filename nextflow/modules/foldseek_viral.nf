@@ -5,6 +5,8 @@
 process foldseek_viral {
     tag "$id"
     label 'medium'
+    conda "${projectDir}/envs/foldseek.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     publishDir "${params.outdir}/novel_virus_detection/details", mode: params.publish_mode, overwrite: true, failOnError: true
 

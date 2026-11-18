@@ -1,0 +1,13 @@
+# Author: Naveen Duhan
+# License: MIT (see LICENSE)
+# Description: Optional metaSPAdes and hybrid CD-HIT-EST assembly environment used when params.assembler is metaspades or hybrid.
+
+name: metanextviro-assembly-extra
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - spades
+  - cd-hit
+  - biopython

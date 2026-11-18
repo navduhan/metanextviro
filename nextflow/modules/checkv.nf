@@ -5,6 +5,8 @@
 process checkv {
     tag "$id"
     label 'medium'
+    conda "${projectDir}/envs/checkv.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://quay.io/biocontainers/checkv:1.1.1--pyh106432d_1' : 'quay.io/biocontainers/checkv:1.1.1--pyh106432d_1' }"
 
     publishDir "${params.outdir}/checkv", mode: params.publish_mode, overwrite: true, failOnError: true
 

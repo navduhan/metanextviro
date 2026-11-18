@@ -5,6 +5,8 @@
 process coverage_plot {
     tag "$id"
     label 'low'
+    conda "${projectDir}/envs/core.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     publishDir "${params.outdir}/coverage_plots", mode: params.publish_mode, overwrite: true, failOnError: true
 
