@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Generates per-sample coverage plots and builds the summary HTML index from quality, Kraken2, coverage, CheckV, and VirFinder outputs.
 
 include { html_report } from '../modules/html_report.nf'

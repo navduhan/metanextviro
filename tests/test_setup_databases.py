@@ -1,5 +1,5 @@
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Unit tests verifying database preset dependency resolution, organism name taxid lookup, VOGDB taxonomy merging, config export, and CLI command assembly."""
 
 import csv
@@ -124,7 +124,7 @@ class SetupDatabasesTests(unittest.TestCase):
     def test_metanextviro_cli_launcher_builds_nextflow_and_setup_commands(self):
         cmd, info = mn_cli.build_nextflow_command(['--version'])
         self.assertIsNone(cmd)
-        self.assertIn('MetaNextViro v0.2.0', info)
+        self.assertIn('MetaNextViro v1.0.0', info)
 
         setup_cmd, _ = mn_cli.build_nextflow_command(['setup-db', '--db-dir', '/tmp/dbs', '--dry-run'])
         self.assertEqual(setup_cmd[:2], [sys.executable, str(ROOT / 'bin/setup_databases.py')])

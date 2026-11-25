@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Dispatches paired raw reads to Trim Galore, fastp, or Flexbar according to params.trimming_tool and emits cleaned read channels.
 
 include { fastp } from '../modules/fastp.nf'

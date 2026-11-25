@@ -1,5 +1,5 @@
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Unit tests checking paired FASTQ filename parsing across Illumina, R1/R2, and SRA patterns, multi-lane handling, and unpaired mate errors in create_samplesheet.py."""
 
 import csv

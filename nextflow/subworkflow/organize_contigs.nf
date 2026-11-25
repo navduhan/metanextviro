@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Joins BLAST annotation outputs with assembled contigs per sample and runs organize_contigs_by_taxonomy.py to group sequences by taxonomy and isolate chimeras.
 
 process ORGANIZE_CONTIGS {

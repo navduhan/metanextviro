@@ -1,5 +1,5 @@
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Package initializer exposing the MetaNextViro CLI launcher version string."""
 
-__version__ = "0.2.0"
+__version__ = "1.0.0"

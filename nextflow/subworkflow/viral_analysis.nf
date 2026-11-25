@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Runs optional CheckV, VirFinder, and geNomad contig classification modules when enabled by pipeline parameters.
 
 include { checkv } from '../modules/checkv.nf'

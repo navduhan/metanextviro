@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Merges MEGAHIT and metaSPAdes assemblies, clusters redundant contigs with CD-HIT-EST, and standardizes headers with rename_contigs.py.
 
 process hybrid {

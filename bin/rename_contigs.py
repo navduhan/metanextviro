@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Rewrites assembled FASTA headers into uniform MetaNextViro contig identifiers containing the assembler name, sequential index, and sequence length."""
 
 import argparse

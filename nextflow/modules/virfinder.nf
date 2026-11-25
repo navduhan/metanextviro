@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Runs run_virfinder.R on assembled or triaged contigs to compute 8-mer viral scores, FDR q-values, and sequence complexity flags.
 
 process virfinder {

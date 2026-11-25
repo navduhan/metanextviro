@@ -1,11 +1,12 @@
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 # Description: Isolated Foldseek environment for optional 3D structural homology searches on candidate viral ORFs.
 
 name: metanextviro-foldseek
 channels:
   - conda-forge
   - bioconda
+  - nodefaults
 dependencies:
   - python=3.11
   - foldseek

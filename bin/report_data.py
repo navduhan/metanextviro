@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Collects quality control, host depletion, assembly, BLAST, Kraken2, coverage, and discovery outputs across samples and builds summary tables, dynamic methods text, and Matplotlib figures for reporting."""
 
 import base64
@@ -392,7 +392,7 @@ def build_methods_paragraph(data):
     meta = data['run_meta']
     parts = [
         f"Sequencing reads across {len(data['sample_ids'])} sample(s) were processed with "
-        f"MetaNextViro v{meta.get('version', '0.2.0')} (Nextflow {meta.get('nextflow_version', '')})."
+        f"MetaNextViro v{meta.get('version', '1.0.0')} (Nextflow {meta.get('nextflow_version', '')})."
     ]
     if not meta.get('skip_trimming'):
         parts.append(

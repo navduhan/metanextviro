@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Defines the post-BLAST contig triage subworkflow and the opt-in divergent virus discovery subworkflow combining ORF scanning, HMM, protein, Foldseek, geNomad, CheckV, VirFinder, and phylogenetic steps.
 
 include { viral_hmm } from '../modules/viral_hmm.nf'

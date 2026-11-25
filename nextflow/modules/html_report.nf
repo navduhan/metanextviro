@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Builds a lightweight summary HTML index linking FastQC, Kraken2, coverage, CheckV, and VirFinder result files in the output directory.
 
 process html_report {

@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Reads CSV, TSV, or Excel samplesheets, verifies that input FASTQ files exist, and emits paired sample ID and read channels.
 
 // Utility function to check if a file has a specific extension

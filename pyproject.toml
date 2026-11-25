@@ -1,5 +1,5 @@
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 # Description: Python package metadata and console entry point configuration for the optional metanextviro command-line launcher.
 
 [build-system]
@@ -8,13 +8,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "metanextviro"
-version = "0.2.0"
+version = "1.0.0"
 description = "MetaNextViro: High-Throughput Virus Identification, Novel Virus Discovery, and Metagenomic Analysis Pipeline"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.9"
 authors = [
-    { name = "Naveen Duhan", email = "naveen.duhan@outlook.com" }
+    { name = "Naveen Duhan", email = "naveen.duhan@sdstate.edu" }
 ]
 keywords = ["virology", "metagenomics", "nextflow", "virus-discovery", "bioinformatics"]
 

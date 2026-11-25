@@ -1,11 +1,12 @@
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 # Description: Core surveillance, BLAST and DIAMOND annotation, Kraken2 profiling, coverage, database setup, triage, and PDF/HTML reporting environment for MetaNextViro.
 
 name: metanextviro-core
 channels:
   - conda-forge
   - bioconda
+  - nodefaults
 dependencies:
   - python=3.11
   - fastqc
@@ -15,7 +16,6 @@ dependencies:
   - samtools
   - bedtools
   - megahit
-  - quast
   - kraken2
   - krona
   - blast

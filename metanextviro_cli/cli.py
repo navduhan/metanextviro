@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Thin command-line wrapper that forwards metanextviro arguments to nextflow run and provides shortcuts for pull, setup-db, create-samplesheet, and cleanup."""
 
+import os
+import re
 import shutil
 import subprocess
 import sys
@@ -11,6 +13,46 @@ from pathlib import Path
 from metanextviro_cli import __version__
 
 GITHUB_REPO = "navduhan/metanextviro"
+
+
+def _java_major(java_bin):
+    try:
+        out = subprocess.run([str(java_bin), "-version"], capture_output=True, text=True, timeout=5)
+        m = re.search(r'"(\d+)', (out.stdout or "") + "\n" + (out.stderr or ""))
+        return int(m.group(1)) if m else None
+    except Exception:
+        return None
+
+
+def ensure_compatible_java_env(env):
+    """Ensure JAVA_HOME points to Java 17..26 for Nextflow when system JAVA_HOME is OpenJDK 27+."""
+    jh = env.get("JAVA_HOME")
+    if jh:
+        maj = _java_major(Path(jh) / "bin/java")
+        if maj is not None and 17 <= maj <= 26:
+            return
+    candidates = []
+    if env.get("CONDA_PREFIX"):
+        candidates.append(Path(env["CONDA_PREFIX"]) / "lib/jvm")
+    for p in (
+        "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home",
+        "/opt/homebrew/opt/openjdk@21",
+        "/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home",
+        "/opt/homebrew/opt/openjdk@17",
+    ):
+        candidates.append(Path(p))
+    home = Path.home()
+    for base in ("miniconda3/envs", "miniforge3/envs", "mambaforge/envs", "anaconda3/envs"):
+        envs_dir = home / base
+        if envs_dir.is_dir():
+            for child in sorted(envs_dir.iterdir()):
+                candidates.append(child / "lib/jvm")
+    for cand in candidates:
+        maj = _java_major(cand / "bin/java")
+        if maj is not None and 17 <= maj <= 26:
+            env["JAVA_HOME"] = str(cand)
+            env["JAVA_CMD"] = str(cand / "bin/java")
+            return
 
 
 def resolve_pipeline_target():
@@ -78,7 +120,9 @@ def main(argv=None):
     if info_msg is not None:
         print(info_msg)
         return 0
-    result = subprocess.run(cmd)
+    env = os.environ.copy()
+    ensure_compatible_java_env(env)
+    result = subprocess.run(cmd, env=env)
     return result.returncode
 
 

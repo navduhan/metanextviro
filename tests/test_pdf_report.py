@@ -1,5 +1,5 @@
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Unit tests verifying cohort and per-sample PDF and HTML report generation, sample prefix isolation, symlink traversal, and Matplotlib PDF fallback."""
 
 import importlib.util
@@ -114,7 +114,7 @@ class FinalReportGenerationTests(unittest.TestCase):
             in_dir = self._stage_full_cohort(tmp_path)
             out_dir = tmp_path / 'final_report'
             meta = {
-                'version': '0.2.0',
+                'version': '1.0.0',
                 'nextflow_version': '26.10.5',
                 'run_name': 'unit_test_run',
                 'assembler': 'megahit',

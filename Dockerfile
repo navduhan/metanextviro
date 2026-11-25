@@ -1,10 +1,10 @@
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 # Description: Builds the lean MetaNextViro container image from Micromamba using the core, assembly, discovery, and Foldseek environments; heavy single-tool opt-in modules use official BioContainers.
 
 FROM mambaorg/micromamba:1.5.10
 
-LABEL maintainer="Naveen Duhan <naveen.duhan@outlook.com>"
+LABEL maintainer="Naveen Duhan <naveen.duhan@sdstate.edu>"
 LABEL description="MetaNextViro: Viral Metagenomics Pipeline"
 
 USER root

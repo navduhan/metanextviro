@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Aligns trimmed paired reads to a host reference genome with Bowtie2 and extracts unmapped read pairs with SAMtools before de novo assembly.
 
 process host_depletion {

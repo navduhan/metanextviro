@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Generates per-sample PNG coverage bar and distribution plots from contig coverage summary tables using pandas and Matplotlib.
 
 process coverage_plot {

@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Aligns assembled contigs against the NCBI nt nucleotide database using blastn and runs process_blast_results.py to export interval-merged TSV and XLSX summaries.
 
 process blastn {
@@ -12,7 +12,7 @@ process blastn {
         mode: params.publish_mode,
         overwrite: true,
         failOnError: true,
-        saveAs: { filename -> filename.startsWith("${id}_best_hits_") ? filename : "details/${filename}" }
+        saveAs: { filename -> filename.contains('_best_hits_') ? filename : "details/${filename}" }
 
     input:
         tuple val(id), path(fasta_file)  // Input: Sample ID and FASTA file
@@ -38,6 +38,7 @@ process blastn {
     echo " Using BLAST database: ${params.blastdb_nt}"
 
     # Run BLAST search
+    export BLASTDB_LMDB_MAP_SIZE="\${BLASTDB_LMDB_MAP_SIZE:-100000000}"
     blastn \
         -query ${fasta_file} \
         -db ${params.blastdb_nt} \

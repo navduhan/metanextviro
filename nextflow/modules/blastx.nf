@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Searches assembled contigs against the protein nr database using DIAMOND blastx or NCBI blastx and summarizes retained hits with process_blast_results.py.
 
 process blastx {
@@ -12,7 +12,7 @@ process blastx {
         mode: params.publish_mode,
         overwrite: true,
         failOnError: true,
-        saveAs: { filename -> filename.startsWith("${id}_best_hits_") ? filename : "details/${filename}" }
+        saveAs: { filename -> filename.contains('_best_hits_') ? filename : "details/${filename}" }
 
     input:
         tuple val(id), path(fasta_file)  // Input: Sample ID and FASTA file

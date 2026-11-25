@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Merges multi-HSP BLASTN, BLASTX, and DIAMOND intervals per contig using exact coordinate union, resolves NCBI lowest common ancestor lineages, and exports descending-sorted TSV and XLSX tables."""
 
 import argparse
@@ -231,18 +231,25 @@ def sanitize_excel_text(value, is_sequence=False):
     return text[:EXCEL_MAX_CHARS - 3] + '...'
 
 
+def _is_missing_excel_val(val):
+    return val is None or str(val).strip() in ('', 'NA', 'NaN', 'nan', 'None', 'null')
+
+
 def typed_excel_value(col, raw_value, int_cols=INT_COLUMNS, pct_cols=PCT_COLUMNS,
                       score_cols=SCORE_COLUMNS, evalue_cols=EVALUE_COLUMNS):
-    if raw_value == '' or raw_value is None:
+    if _is_missing_excel_val(raw_value):
         return '', 'text'
     if col in int_cols or col == 'query_frame':
-        return int(raw_value), 'int'
+        return int(float(raw_value)), 'int'
     if col in pct_cols:
-        return float(raw_value), 'pct'
+        fval = float(raw_value)
+        return (fval, 'pct') if math.isfinite(fval) else ('', 'text')
     if col in score_cols:
-        return float(raw_value), 'score'
+        fval = float(raw_value)
+        return (fval, 'score') if math.isfinite(fval) else ('', 'text')
     if col in evalue_cols:
-        return float(raw_value), 'evalue'
+        fval = float(raw_value)
+        return (fval, 'evalue') if math.isfinite(fval) else ('', 'text')
     if col == 'sequence':
         return sanitize_excel_text(raw_value, is_sequence=True), 'seq'
     return sanitize_excel_text(raw_value), 'text'
@@ -262,17 +269,19 @@ def compute_column_widths(columns, rows, int_cols=INT_COLUMNS, pct_cols=PCT_COLU
         max_len = 0
         for row in rows:
             val = row.get(col, '')
-            if val == '' or val is None:
+            if _is_missing_excel_val(val):
                 continue
             if col in int_cols or col == 'query_frame':
-                disp = len(f'{int(val):,}')
+                disp = len(f'{int(float(val)):,}')
             elif col in pct_cols:
-                disp = len(f'{float(val):.2f}')
+                fval = float(val)
+                disp = len(f'{fval:.2f}') if math.isfinite(fval) else 0
             elif col in score_cols:
-                disp = len(f'{float(val):.1f}')
+                fval = float(val)
+                disp = len(f'{fval:.1f}') if math.isfinite(fval) else 0
             elif col in evalue_cols:
                 fval = float(val)
-                disp = 1 if fval == 0 else len(f'{fval:.2E}')
+                disp = (1 if fval == 0 else len(f'{fval:.2E}')) if math.isfinite(fval) else 0
             else:
                 disp = len(sanitize_excel_text(val))
             if disp > max_len:

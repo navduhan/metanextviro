@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Stages sample outputs and runs generate_reports.py to publish cohort summary and per-sample PDF and standalone HTML reports.
 
 process final_report {

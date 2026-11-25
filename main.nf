@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Entry point for the MetaNextViro Nextflow DSL2 pipeline. Validates runtime parameters, supports standalone samplesheet creation and reference database setup, and launches the main viral metagenomics workflow.
 
 // Enable DSL 2 syntax
@@ -43,7 +43,6 @@ workflow {
         def targetSheet = file(params.samplesheet ?: 'samplesheet.csv').toAbsolutePath()
         create_samplesheet(
             Channel.of(absReadsDir),
-            Channel.of(targetSheet.parent.toString()),
             Channel.of(targetSheet.fileName.toString())
         )
     } else if (params.setup_databases && !params.input && !resolvedReadsDir) {
@@ -126,15 +125,14 @@ workflow {
             rawInputCh = Channel.value(file(params.input))
         } else {
             def absReadsDir = file(resolvedReadsDir).toAbsolutePath().toString()
-            def autoSheetOutDir = file(params.outdir).toAbsolutePath().toString()
             create_samplesheet(
                 Channel.of(absReadsDir),
-                Channel.of(autoSheetOutDir),
                 Channel.of('samplesheet.csv')
             )
             rawInputCh = create_samplesheet.out.csv
         }
 
+        def ch_input
         if (willDownloadDbs) {
             setup_databases(Channel.of(targetDbDir), Channel.of(params.db_preset))
             ch_input = setup_databases.out.ready_db_dir.combine(rawInputCh).map { _ready, sheetFile -> sheetFile }
@@ -173,71 +171,75 @@ def validateHardLinks(outputDir, workDir) {
 def helpMSG() {
     println """
     ______________________________________________________________________________________________________________________________________________
-    
-                                MetaNextViro: High-Throughput Virus Identification and Metagenomic Analysis Pipeline
-                                                Author : Naveen Duhan (naveen.duhan@outlook.com)
+
+                MetaNextViro v${workflow.manifest.version ?: '1.0.0'}: High-Throughput Virus Identification & Divergent Virus Discovery Pipeline
+                                                Author : Naveen Duhan (naveen.duhan@sdstate.edu)
     ______________________________________________________________________________________________________________________________________________
 
-    Quick Start (Nextflow or CLI execution):
+    Usage:
+      nextflow run main.nf (--input <samplesheet> | --reads_dir <fastq_dir>) [options] -profile <executor>,<env>
+      nextflow run main.nf --setup_databases [--db_preset <preset>] [--db_dir <dir>] -profile <env>
+      nextflow run main.nf --create_samplesheet --reads_dir <fastq_dir> [--samplesheet <out.csv>]
 
-    # 0. One-time pull so you can run short 'nextflow run metanextviro' anywhere:
-    nextflow pull navduhan/metanextviro
+    Input & Samplesheet Options:
+      --input                     Path to an existing samplesheet (CSV, TSV, XLS, XLSX)
+      --reads_dir                 Directory of paired FASTQ files (runs directly or pairs with --create_samplesheet)
+      --create_samplesheet        Generate a validated samplesheet CSV from --reads_dir and exit
+      --samplesheet               Output CSV path for --create_samplesheet (default: 'samplesheet.csv')
+      --recursive_reads           Recursively search subdirectories under --reads_dir (default: false)
 
-    # 1. Generate a validated samplesheet from a directory of paired FASTQ files:
-    nextflow run metanextviro --create_samplesheet --reads_dir ./raw_fastqs --samplesheet samplesheet.csv
-
-    # 2. One-time full viral database download & setup (~4.0 GB default):
-    nextflow run metanextviro --setup_databases --db_dir ~/.metanextviro/dbs -profile conda
-
-    # 3. Routine targeted virus run (from --input samplesheet OR directly from --reads_dir):
-    nextflow run metanextviro --input samplesheet.csv --outdir results -profile conda
-    nextflow run metanextviro --reads_dir ./raw_fastqs --outdir results -profile conda
-
-    # 4. Novel virus discovery + VirFinder (with automatic Order/Family assignment):
-    nextflow run metanextviro --input samplesheet.csv --discover_novel_viruses --run_virfinder -profile conda
-
-    Samplesheet & Input Options:
-    --input              Path to an existing samplesheet (CSV, TSV, XLS, XLSX)
-    --reads_dir          Directory of paired FASTQ files (runs directly or pairs with --create_samplesheet)
-    --create_samplesheet Generate a samplesheet CSV from --reads_dir and exit
-    --samplesheet        Output CSV path for --create_samplesheet (default: 'samplesheet.csv')
-    --recursive_reads    Recursively search subdirectories under --reads_dir (default: false)
+    Core Pipeline Options:
+      --outdir                    Directory for published output files (default: './results')
+      --publish_mode              Output publishing mode: copy (default), link (same filesystem), symlink, rellink
+      --trimming_tool             Read trimming tool: 'trim_galore' (default), 'fastp', or 'flexbar'
+      --deplete_host              Subtract host reads prior to assembly (requires --host_fasta or --host_bowtie2_index)
+      --assembler                 De novo assembler: 'megahit' (default), 'metaspades', or 'hybrid'
+      --blast_options             Reference search targets: viruses (default), nt, nr, all, or comma-separated
+      --blast_max_target_seqs     Maximum subject sequences reported per query (default: 50)
+      --blastx_tool               Protein homology tool: 'diamond' (default) or 'blastx'
+      --organize_contigs          Sort contigs by taxonomy & isolate inter-family chimeras (default: false)
+      --conda_cache_dir           Shared cache directory for tiered Conda/Mamba envs (default: ~/.metanextviro/conda_envs)
+      --queue                     SLURM partition/queue override (default: 'compute' in slurm/sdsu profiles)
+      --account                   SLURM account to charge (optional; uses scheduler default when omitted)
 
     Database Management Options:
-    --db_dir            Directory for managed databases (default: ~/.metanextviro/dbs)
-    --setup_databases   Download and build reference databases in --db_dir (can run standalone without --input)
-    --auto_download_dbs Automatically build missing databases in --db_dir before running analysis
-    --db_preset         Database bundle: 'full_viral' (~4 GB, default), 'minimal' (~1.1 GB), 'discovery_only' (~375 MB), 'genbank_complete' (~18-20 GB)
-    --db_components     Optional comma-separated component list overriding --db_preset
-    --db_force          Force rebuilding databases even if already present
+      --db_dir                    Directory for managed databases (default: ~/.metanextviro/dbs)
+      --setup_databases           Download and verify reference databases in --db_dir (runs standalone without --input)
+      --auto_download_dbs         Automatically provision missing databases in --db_dir before analysis
+      --db_preset                 Database bundle: 'full_viral' (~4.0 GB, default), 'minimal' (~1.1 GB),
+                                  'discovery_only' (~0.38 GB), or 'genbank_complete' (~18.8 GB)
+      --db_components             Optional comma-separated component list overriding --db_preset
+      --db_force                  Force rebuilding databases even if already completed
 
-    Core Options:
-    --input             Path to the input samplesheet (mandatory for analysis runs)
-    --outdir            Directory for output files (default: './results')
-    --publish_mode      Output publishing: copy (default), link (same filesystem), symlink, rellink
-    --trimming_tool     Trimming tool: 'fastp', 'flexbar', or 'trim_galore' (default: 'trim_galore')
-    --assembler         Assembler: 'megahit' (default), 'metaspades', or 'hybrid'
-    --blast_options     Databases: viruses (alias: nt_viruses), nt, nr, all, or comma-separated (default: viruses)
-    --blast_max_target_seqs Maximum subject sequences reported per query (default: 50)
-    --blastx_tool       Protein search tool: diamond (default) or blastx
-    --organize_contigs  Enable contig organization using selected BLAST results (default: false)
-    --conda_cache_dir   Shared cache directory for tiered Conda/Mamba environments (default: ~/.metanextviro/conda_envs)
-    --account           SLURM account to charge (optional; uses scheduler default when omitted)
+    Opt-in Novel Virus Discovery Options (disabled by default):
+      --discover_novel_viruses    Enable post-BLAST triage, biophysical/EVE filtering & 5-tier ICTV candidate synthesis
+      --discovery_all_contigs     Score all contigs >= novel_min_contig_length instead of skipping confident BLAST hits
+      --run_viral_hmm             Scan candidate ORFs against VOGDB hallmark profile HMMs
+      --run_viral_protein_blast   Run ultra-sensitive DIAMOND blastp on candidate ORFs against RefSeq viral proteins
+      --run_genomad               Enable geNomad neural virus & plasmid classifier
+      --run_checkv                Enable CheckV completeness & provirus boundary assessment
+      --run_virfinder             Enable BH-FDR enhanced VirFinder 8-mer scoring + Order/Family taxonomy
+      --run_foldseek              Run Foldseek 3D structural homology search on candidate ORFs
+      --run_novel_phylogeny       Build midpoint-rooted hallmark phylogenies via MAFFT + FastTree/IQ-TREE
+      --phylo_tool                Phylogenetic tree builder: 'fasttree' (default) or 'iqtree'
 
-    Opt-in Novel Virus Discovery & VirFinder Options (disabled by default):
-    --discover_novel_viruses  Enable automated post-BLAST novel virus triage, ORF/DTR/EVE scan & XLSX/TSV report
-    --run_virfinder           Enable enhanced VirFinder (FDR q-value + entropy QC + Order/Family follow-up)
-    --run_checkv              Enable CheckV assessment on unassigned/divergent contigs
-    --run_genomad             Enable geNomad marker + neural virus/plasmid classifier
-    --discovery_all_contigs   Score all contigs instead of automatically skipping confident BLAST hits
-    --deplete_host            Subtract host reads prior to assembly (requires --host_fasta or --host_bowtie2_index)
-    --run_viral_hmm           Scan candidate ORFs against viral hallmark HMMs
-    --run_viral_protein_blast Run ultra-sensitive DIAMOND blastp on candidate ORFs
-    --run_foldseek            Run Foldseek 3D structural homology search on candidate ORFs
-    --run_novel_phylogeny     Align promoted novel ORFs with reference hallmarks via MAFFT + FastTree/IQ-TREE
+    Execution Profiles (-profile):
+      local, slurm, sdsu, conda, mamba, docker, singularity, apptainer
 
-    Profiles (-profile):
-    local, slurm, sdsu, conda, mamba, docker, singularity, apptainer
+    Examples:
+      # 1. Generate a validated samplesheet from paired FASTQ reads:
+      nextflow run main.nf --create_samplesheet --reads_dir ./raw_fastqs --samplesheet samplesheet.csv
+
+      # 2. One-time reference database setup (~4.0 GB full_viral default):
+      nextflow run main.nf --setup_databases --db_dir ~/.metanextviro/dbs -profile local,conda
+
+      # 3. Routine viral surveillance run (from --reads_dir or --input samplesheet):
+      nextflow run main.nf --reads_dir ./raw_fastqs --outdir results -profile local,conda
+
+      # 4. Full surveillance + divergent novel virus discovery + hallmark phylogeny:
+      nextflow run main.nf --input samplesheet.csv --outdir results_discovery \\
+          --discover_novel_viruses --run_viral_hmm --run_viral_protein_blast \\
+          --run_genomad --run_checkv --run_virfinder --run_novel_phylogeny -profile local,conda
 
     """.stripIndent()
 }

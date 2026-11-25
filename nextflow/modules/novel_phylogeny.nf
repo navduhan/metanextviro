@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Aligns promoted candidate viral hallmark ORFs against curated reference proteins with MAFFT and builds a maximum-likelihood phylogenetic tree using FastTree or IQ-TREE.
 
 process novel_phylogeny {

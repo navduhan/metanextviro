@@ -1,11 +1,15 @@
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
-# Description: Isolated R environment for VirFinder 8-mer viral scoring when params.run_virfinder is enabled.
+# SPDX-License-Identifier: MIT
+# Description: Isolated R environment for VirFinder 8-mer viral scoring (supports native linux-64 and osx-arm64) when params.run_virfinder is enabled.
 
 name: metanextviro-virfinder
 channels:
   - conda-forge
   - bioconda
+  - nodefaults
 dependencies:
-  - r-base=4.3.1
-  - r-virfinder
+  - r-base=4.3
+  - r-rcpp
+  - r-glmnet
+  - bioconductor-qvalue
+  - cxx-compiler

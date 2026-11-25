@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Assembles paired-end reads de novo with MEGAHIT and standardizes output contig headers using rename_contigs.py.
 
 process megahit {
@@ -22,10 +22,17 @@ process megahit {
         tuple val(id), path("megahit_assembly/${id}/${id}.contigs.fa"), emit: raw_contigs
 
     script:
+    def memArg = task.memory ? "--memory ${task.memory.toBytes()}" : ''
     """
 
    # Create output directory for assembly
     mkdir -p megahit_assembly
+    # Bioconda megahit v1.2.9 on macOS (Darwin) overflows the 512 KB std::thread stack when threads > 1; Linux uses full task.cpus
+    if [ "\$(uname -s)" = "Darwin" ]; then
+        MH_THREADS=1
+    else
+        MH_THREADS=${task.cpus}
+    fi
     # Log the start of the process
     echo " Starting MEGAHIT assembly for sample: $id"
     echo "Input files:"
@@ -41,7 +48,8 @@ process megahit {
             --out-dir megahit_assembly/${id} \\
             --out-prefix ${id} \\
             --no-mercy \\
-            --num-cpu-threads ${task.cpus} \\
+            ${memArg} \\
+            --num-cpu-threads "\$MH_THREADS" \\
             --min-contig-len ${params.min_contig_length}
     else
         echo " Running MEGAHIT in single-end mode..."
@@ -50,7 +58,8 @@ process megahit {
             --out-dir megahit_assembly/${id} \\
             --out-prefix ${id} \\
             --no-mercy \\
-            --num-cpu-threads ${task.cpus} \\
+            ${memArg} \\
+            --num-cpu-threads "\$MH_THREADS" \\
             --min-contig-len ${params.min_contig_length}
     fi
 

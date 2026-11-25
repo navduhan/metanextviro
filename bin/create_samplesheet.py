@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Scans a directory of paired-end FASTQ files and writes a validated MetaNextViro samplesheet CSV. Matches Illumina, standard R1/R2, and SRA 1/2 naming patterns and checks that every sample has both mates."""
 
 import argparse

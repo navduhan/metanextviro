@@ -1,11 +1,12 @@
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 # Description: Viral hallmark HMM search and phylogenetic reconstruction environment containing HMMER, MAFFT, FastTree, IQ-TREE, Biopython, and ETE3.
 
 name: metanextviro-discovery
 channels:
   - conda-forge
   - bioconda
+  - nodefaults
 dependencies:
   - python=3.11
   - hmmer

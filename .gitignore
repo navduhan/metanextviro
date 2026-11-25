@@ -22,6 +22,7 @@ Icon?
 # Nextflow files
 .nextflow.log*
 .nextflow/
+work/
 
 # Python caches from helper scripts and regression tests
 __pycache__/

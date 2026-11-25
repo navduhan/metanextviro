@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Scans candidate contigs across six reading frames for edge-open viral ORFs, coding density, direct and inverted terminal repeats, 3-mer Shannon entropy, and stop-codon fragmentation signatures."""
 
 import argparse

@@ -1,12 +1,12 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Evaluates assembled contig FASTA files with QUAST to report contig counts, N50, and assembly length statistics.
 
 process quast {
     tag "$meta.id"
     label 'low'
-    conda "${projectDir}/envs/core.yml"
-    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
+    conda "${projectDir}/envs/quast.yml"
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://quay.io/biocontainers/quast:5.2.0--py310pl5321h6cc9453_3' : 'quay.io/biocontainers/quast:5.2.0--py310pl5321h6cc9453_3' }"
 
     publishDir "${params.outdir}/assembly_stats", mode: params.publish_mode, overwrite: true, failOnError: true
 

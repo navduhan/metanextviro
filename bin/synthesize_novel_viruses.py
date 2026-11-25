@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Combines architecture metrics, HMM, DIAMOND, Foldseek, geNomad, CheckV, VirFinder, and coverage evidence into a composite viral score and assigns identity-capped ICTV taxonomy to candidate contigs."""
 
 import argparse
@@ -93,10 +93,16 @@ TIER_PRIORITY = {
 def read_tsv_map(path, key_col):
     if not path or not os.path.exists(path) or os.path.getsize(path) == 0:
         return {}
+    keys = (key_col,) if isinstance(key_col, str) else tuple(key_col)
     mapping = {}
     with open(path, newline='') as handle:
         for row in csv.DictReader(handle, delimiter='\t'):
-            key = row.get(key_col, '').strip()
+            key = ''
+            for k in keys:
+                val = row.get(k, '')
+                if val and val.strip():
+                    key = val.strip()
+                    break
             if key and key not in mapping:
                 mapping[key] = row
     return mapping
@@ -390,7 +396,8 @@ def classify_candidate(triage, arch, cov, vf, checkv, gm_vir, gm_plas, provirus_
             sources.append('fragmented_orfs')
         if breadth is not None and breadth < 50.0:
             sources.append(f'partial_breadth:{breadth:.1f}%')
-        return 'possible_eve_or_provirus_needs_review', score, ';'.join(sources)
+        gated_eve_score = min(44.0, max(0.0, round(score * 0.50, 1)))
+        return 'possible_eve_or_provirus_needs_review', gated_eve_score, ';'.join(sources)
 
     strong_coverage_ok = (breadth is None or breadth >= 70.0)
     independent_signals = sum([
@@ -425,7 +432,7 @@ def synthesize_novel_viruses(contigs_fasta, candidate_orfs, triage_manifest, arc
 
     arch_map = read_tsv_map(architecture_tsv, 'query_id')
     cov_map = read_tsv_map(coverage_tsv, 'Contig')
-    vf_map = read_tsv_map(virfinder_tsv, 'name')
+    vf_map = read_tsv_map(virfinder_tsv, ('name', 'query_id'))
     cv_map = read_tsv_map(checkv_tsv, 'contig_id')
     gm_vir_map, gm_plas_map, provirus_set = read_genomad_summaries(genomad_virus_tsv, genomad_plasmid_tsv)
     hmm_grouped = read_tsv_grouped(hmm_tsv, 'query_id')
@@ -438,6 +445,9 @@ def synthesize_novel_viruses(contigs_fasta, candidate_orfs, triage_manifest, arc
     class_counts = {k: 0 for k in TIER_PRIORITY}
     triage_counts = {}
     tax_assigned_count = 0
+
+    def _clean(val):
+        return '' if val is None or str(val).strip() in ('', 'NA', 'NaN', 'nan', 'None') else val
 
     with closing(SeqIO.index(str(contigs_fasta), 'fasta')) as seq_index:
         for triage in triage_rows:
@@ -497,16 +507,16 @@ def synthesize_novel_viruses(contigs_fasta, candidate_orfs, triage_manifest, arc
                 'foldseek_target': fs.get('target_id', ''),
                 'foldseek_probability': fs.get('probability', ''),
                 'foldseek_evalue': fs.get('evalue', ''),
-                'virfinder_score': vf.get('score', ''),
-                'virfinder_qvalue': vf.get('qvalue', ''),
-                'virfinder_tier': vf.get('confidence_tier', ''),
-                'genomad_virus_score': gm_vir.get('virus_score', ''),
-                'genomad_plasmid_score': gm_plas.get('plasmid_score', ''),
-                'genomad_taxonomy': gm_vir.get('taxonomy', ''),
-                'checkv_quality': cv.get('checkv_quality', ''),
-                'checkv_completeness': cv.get('completeness', ''),
-                'checkv_viral_genes': cv.get('viral_genes', ''),
-                'checkv_host_genes': cv.get('host_genes', ''),
+                'virfinder_score': _clean(vf.get('score', '')),
+                'virfinder_qvalue': _clean(vf.get('qvalue', '')),
+                'virfinder_tier': _clean(vf.get('confidence_tier', '')),
+                'genomad_virus_score': _clean(gm_vir.get('virus_score', '')),
+                'genomad_plasmid_score': _clean(gm_plas.get('plasmid_score', '')),
+                'genomad_taxonomy': _clean(gm_vir.get('taxonomy', '')),
+                'checkv_quality': _clean(cv.get('checkv_quality', '')),
+                'checkv_completeness': _clean(cv.get('completeness', '')),
+                'checkv_viral_genes': _clean(cv.get('viral_genes', '')),
+                'checkv_host_genes': _clean(cv.get('host_genes', '')),
                 'blast_viral_subject': triage.get('best_viral_subject', ''),
                 'blast_viral_family': triage.get('best_viral_family', ''),
                 'blast_viral_identity': triage.get('best_viral_identity', ''),

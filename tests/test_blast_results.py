@@ -1,5 +1,5 @@
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Unit tests verifying multi-HSP interval union merging, NCBI LCA resolution, descending TSV and XLSX export, and inter-family chimera routing."""
 
 import csv

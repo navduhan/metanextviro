@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Performs paired-end adapter removal and quality trimming using Trim Galore and Cutadapt.
 
 process trim_galore {

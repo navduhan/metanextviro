@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 # Description: Runs VirFinder 8-mer viral scoring on assembled contigs, handles empty FASTA inputs safely, computes FDR q-values and 3-mer Shannon entropy metrics, and writes full and filtered TSV outputs.
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -40,7 +40,7 @@ if (length(header_idx) == 0) {
 }
 
 # Compute sequence QC metrics (GC%, N-fraction, normalized 3-mer entropy) per contig
-seq_names <- sub("^>\\s*([^\\s]+).*$", "\\1", lines[header_idx])
+seq_names <- sub("^>\\s*(\\S+).*$", "\\1", lines[header_idx], perl = TRUE)
 end_idx <- c(header_idx[-1] - 1, length(lines))
 
 calc_seq_qc <- function(seq_str) {
@@ -78,9 +78,100 @@ qc_df <- data.frame(
   stringsAsFactors = FALSE
 )
 
+get_script_dir <- function() {
+  cmd_args <- commandArgs(trailingOnly = FALSE)
+  file_arg <- grep("^--file=", cmd_args, value = TRUE)
+  if (length(file_arg) > 0) {
+    return(dirname(normalizePath(sub("^--file=", "", file_arg[1]), mustWork = FALSE)))
+  }
+  getwd()
+}
+
+ensure_compiler_env <- function() {
+  env_bin <- normalizePath(file.path(R.home(), "..", "..", "bin"), mustWork = FALSE)
+  if (dir.exists(env_bin)) {
+    cur_path <- Sys.getenv("PATH", "")
+    path_sep <- .Platform$path.sep
+    parts <- strsplit(cur_path, path_sep, fixed = TRUE)[[1]]
+    if (!(env_bin %in% parts)) {
+      Sys.setenv(PATH = paste(c(env_bin, parts), collapse = path_sep))
+    }
+  }
+  if (!identical(Sys.info()[["sysname"]], "Darwin")) return(invisible(NULL))
+  cur_sdk <- Sys.getenv("SDKROOT", "")
+  if (nzchar(cur_sdk) && dir.exists(cur_sdk)) return(invisible(NULL))
+  sdk <- tryCatch(
+    trimws(system2("xcrun", "--show-sdk-path", stdout = TRUE, stderr = FALSE)[1]),
+    error = function(e) ""
+  )
+  if (!nzchar(sdk) || !dir.exists(sdk)) {
+    candidates <- c(
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+    )
+    hit <- candidates[dir.exists(candidates)]
+    if (length(hit) > 0) sdk <- hit[1]
+  }
+  if (nzchar(sdk) && dir.exists(sdk)) {
+    Sys.setenv(SDKROOT = sdk, CONDA_BUILD_SYSROOT = sdk)
+  }
+  invisible(NULL)
+}
+
+ensure_virfinder <- function() {
+  if (requireNamespace("VirFinder", quietly = TRUE)) return(invisible(TRUE))
+
+  r_ver <- paste0(R.version$major, ".", strsplit(R.version$minor, "\\.")[[1]][1])
+  plat <- gsub("[^A-Za-z0-9._-]", "_", R.version$platform)
+  base_cache <- file.path(Sys.getenv("HOME", tempdir()), ".metanextviro", "r_libs")
+  ok_dir <- dir.create(base_cache, recursive = TRUE, showWarnings = FALSE) || dir.exists(base_cache)
+  if (!ok_dir || file.access(base_cache, 2) != 0) {
+    base_cache <- file.path(tempdir(), "metanextviro_r_libs")
+    dir.create(base_cache, recursive = TRUE, showWarnings = FALSE)
+  }
+  user_lib <- file.path(base_cache, paste0(plat, "-R", r_ver))
+  dir.create(user_lib, recursive = TRUE, showWarnings = FALSE)
+  .libPaths(c(user_lib, .libPaths()))
+  if (requireNamespace("VirFinder", lib.loc = user_lib, quietly = TRUE)) return(invisible(TRUE))
+
+  lock_dir <- file.path(base_cache, paste0("virfinder_", plat, "_R", r_ver, ".lock"))
+  waited <- 0L
+  while (!dir.create(lock_dir, showWarnings = FALSE)) {
+    Sys.sleep(2)
+    waited <- waited + 2L
+    if (requireNamespace("VirFinder", lib.loc = user_lib, quietly = TRUE)) return(invisible(TRUE))
+    if (waited >= 180L) unlink(lock_dir, recursive = TRUE)
+  }
+  on.exit(unlink(lock_dir, recursive = TRUE), add = TRUE)
+
+  if (!requireNamespace("VirFinder", lib.loc = user_lib, quietly = TRUE)) {
+    ensure_compiler_env()
+    vendored <- file.path(get_script_dir(), "vendor", "VirFinder_1.1.tar.gz")
+    tarball <- if (file.exists(vendored) && file.info(vendored)$size > 0) {
+      vendored
+    } else {
+      dl <- file.path(base_cache, "VirFinder_1.1.tar.gz")
+      if (!file.exists(dl) || file.info(dl)$size == 0) {
+        url <- "https://raw.githubusercontent.com/jessieren/VirFinder/master/linux/VirFinder_1.1.tar.gz"
+        message("Downloading VirFinder 1.1 source package...")
+        utils::download.file(url, destfile = dl, mode = "wb", quiet = TRUE)
+      }
+      dl
+    }
+    message("Compiling VirFinder 1.1 for ", plat, " (R ", r_ver, ") into ", user_lib, " ...")
+    utils::install.packages(tarball, lib = user_lib, repos = NULL, type = "source", quiet = FALSE)
+  }
+  if (!requireNamespace("VirFinder", quietly = TRUE)) {
+    stop("Failed to load or install VirFinder 1.1 in ", user_lib)
+  }
+  invisible(TRUE)
+}
+
+ensure_virfinder()
 suppressPackageStartupMessages(library(VirFinder))
 result <- VF.pred(input_file)
-result$name <- sub("^\\s*([^\\s]+).*$", "\\1", as.character(result$name))
+result$name <- sub("^\\s*(\\S+).*$", "\\1", as.character(result$name), perl = TRUE)
+qc_df <- qc_df[!duplicated(qc_df$seq_id), , drop = FALSE]
 
 # Compute FDR q-values safely (VF.qvalue spline fails on small N; fallback to BH)
 result$qvalue <- tryCatch({

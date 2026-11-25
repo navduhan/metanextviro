@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Searches translated candidate ORFs against viral hallmark profile HMMs with hmmsearch and resolves HMM taxonomic lineages using parse_discovery_hits.py.
 
 process viral_hmm {

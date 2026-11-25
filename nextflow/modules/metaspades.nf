@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Assembles paired-end reads de novo with metaSPAdes and standardizes scaffold headers using rename_contigs.py.
 
 process metaspades {

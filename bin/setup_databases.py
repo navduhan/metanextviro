@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Downloads, verifies checksums, and indexes MetaNextViro reference databases across four storage presets. Writes ready-to-use Nextflow database configuration, YAML parameter files, and a JSON manifest."""
 
 import argparse
@@ -10,6 +10,7 @@ import json
 import os
 import re
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tarfile
@@ -27,8 +28,12 @@ VOG_BASE_URLS = [
 ]
 KRAKEN2_BUCKET_LIST_URL = 'https://genome-idx.s3.amazonaws.com/?prefix=kraken/k2_viral_'
 KRAKEN2_FALLBACK_URL = 'https://genome-idx.s3.amazonaws.com/kraken/k2_viral_20240605.tar.gz'
-CHECKV_ZENODO_URL = 'https://zenodo.org/records/15949601/files/checkv-db-v1.5.tar.gz?download=1'
-GENOMAD_ZENODO_URL = 'https://zenodo.org/records/14886553/files/genomad_db_v1.9.tar.gz?download=1'
+CHECKV_URLS = [
+    'https://portal.nersc.gov/CheckV/checkv-db-v1.5.tar.gz',
+]
+GENOMAD_URLS = [
+    'https://zenodo.org/records/14886553/files/genomad_db_v1.9.tar.gz?download=1',
+]
 
 ALL_COMPONENTS = [
     'taxonomy',
@@ -172,10 +177,37 @@ def compute_hash(path, algo='sha256'):
     return h.hexdigest()
 
 
+def download_from_mirrors(urls, dest_path, retries=3):
+    last_err = None
+    for url in urls:
+        try:
+            return download_file(url, dest_path, retries=retries)
+        except Exception as exc:
+            last_err = exc
+    raise RuntimeError(f'All download mirrors failed for {dest_path}: {last_err}')
+
+
+def safe_tar_extract(tar, member, path):
+    try:
+        tar.extract(member, path=path, filter='data')
+    except TypeError:
+        tar.extract(member, path=path)
+
+
+def safe_tar_extractall(tar, path):
+    try:
+        tar.extractall(path=path, filter='data')
+    except TypeError:
+        tar.extractall(path=path)
+
+
 def run_cmd(cmd, cwd=None):
     str_cmd = [str(x) for x in cmd]
     print(f'  [exec] {" ".join(str_cmd)}')
-    subprocess.run(str_cmd, cwd=cwd, check=True)
+    env = os.environ.copy()
+    # Prevent BLAST+ v5 LMDB 1 TB virtual-address mmap failures on macOS and containers
+    env.setdefault('BLASTDB_LMDB_MAP_SIZE', '100000000')
+    subprocess.run(str_cmd, cwd=cwd, env=env, check=True)
 
 
 def check_required_binaries(components):
@@ -188,7 +220,8 @@ def check_required_binaries(components):
         details = ', '.join(f'{binary} (needed by {comp})' for comp, binary in missing)
         raise RuntimeError(
             f'Missing required executables on PATH: {details}. '
-            'Activate your Conda/container environment first or exclude those components.'
+            'Run via Nextflow (`nextflow run main.nf --setup_databases -profile local,conda`) '
+            'or activate your Conda/container environment first.'
         )
 
 
@@ -265,12 +298,107 @@ def lookup_organism_taxid(org_name, name_to_taxid, default_taxid=10239):
     return default_taxid
 
 
+def build_ete3_sqlite_fallback(sqlite_path, nodes_path, names_path, merged_path):
+    """Build an ETE3-compatible taxa.sqlite directly via stdlib sqlite3 when ete3 is unavailable."""
+    tmp_db = sqlite_path.with_suffix('.sqlite.part')
+    tmp_db.unlink(missing_ok=True)
+    parents = {}
+    ranks = {}
+    with open(nodes_path, encoding='utf-8', errors='replace') as handle:
+        for line in handle:
+            parts = [p.strip() for p in line.split('|')]
+            if len(parts) >= 3 and parts[0].isdigit() and parts[1].isdigit():
+                tid = int(parts[0])
+                parents[tid] = int(parts[1])
+                ranks[tid] = parts[2]
+
+    sci_names = {}
+    common_names = {}
+    synonyms = []
+    with open(names_path, encoding='utf-8', errors='replace') as handle:
+        for line in handle:
+            parts = [p.strip() for p in line.split('|')]
+            if len(parts) < 4 or not parts[0].isdigit():
+                continue
+            tid = int(parts[0])
+            name = parts[1]
+            nclass = parts[3]
+            if nclass == 'scientific name':
+                sci_names[tid] = name
+            elif nclass == 'genbank common name':
+                common_names.setdefault(tid, name)
+            elif nclass in ('synonym', 'equivalent name', 'acronym', 'anamorph', 'blast name'):
+                synonyms.append((tid, name))
+
+    track_cache = {}
+
+    def compute_track(tid):
+        visited = []
+        cur = tid
+        seen = set()
+        while cur and cur not in seen:
+            if cur in track_cache:
+                tail = track_cache[cur]
+                full = ','.join([*(str(x) for x in visited), tail]) if visited else tail
+                break
+            seen.add(cur)
+            visited.append(cur)
+            nxt = parents.get(cur)
+            if nxt is None or nxt == cur:
+                full = ','.join(str(x) for x in visited)
+                break
+            cur = nxt
+        else:
+            full = ','.join(str(x) for x in visited)
+        track_cache[tid] = full
+        return full
+
+    conn = sqlite3.connect(str(tmp_db))
+    try:
+        cur = conn.cursor()
+        cur.executescript(
+            'PRAGMA synchronous = OFF;'
+            'PRAGMA journal_mode = MEMORY;'
+            'CREATE TABLE stats (version INT PRIMARY KEY);'
+            'INSERT INTO stats VALUES (2);'
+            'CREATE TABLE species (taxid INT PRIMARY KEY, parent INT, spname VARCHAR(50) COLLATE NOCASE, '
+            'common VARCHAR(50) COLLATE NOCASE, rank VARCHAR(50), track TEXT);'
+            'CREATE TABLE synonym (taxid INT, spname VARCHAR(50) COLLATE NOCASE, PRIMARY KEY (spname, taxid));'
+            'CREATE TABLE merged (taxid_old INT, taxid_new INT);'
+        )
+        cur.executemany(
+            'INSERT OR REPLACE INTO species VALUES (?, ?, ?, ?, ?, ?)',
+            (
+                (tid, parent, sci_names.get(tid, ''), common_names.get(tid, ''), ranks.get(tid, ''), compute_track(tid))
+                for tid, parent in parents.items()
+            ),
+        )
+        cur.executemany('INSERT OR IGNORE INTO synonym VALUES (?, ?)', synonyms)
+        if merged_path.is_file():
+            merged_rows = []
+            with open(merged_path, encoding='utf-8', errors='replace') as handle:
+                for line in handle:
+                    parts = [p.strip() for p in line.split('|')]
+                    if len(parts) >= 2 and parts[0].isdigit() and parts[1].isdigit():
+                        merged_rows.append((int(parts[0]), int(parts[1])))
+            cur.executemany('INSERT INTO merged VALUES (?, ?)', merged_rows)
+        cur.executescript(
+            'CREATE INDEX spname1 ON species (spname COLLATE NOCASE);'
+            'CREATE INDEX spname2 ON synonym (spname COLLATE NOCASE);'
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    tmp_db.replace(sqlite_path)
+
+
 def setup_taxonomy(db_dir, force=False):
     tax_dir = db_dir / 'taxonomy'
     sqlite_path = tax_dir / 'taxa.sqlite'
     nodes_path = tax_dir / 'nodes.dmp'
     names_path = tax_dir / 'names.dmp'
-    if not force and sqlite_path.is_file() and nodes_path.is_file() and names_path.is_file():
+    merged_path = tax_dir / 'merged.dmp'
+    if not force and sqlite_path.is_file() and sqlite_path.stat().st_size > 1024 and nodes_path.is_file() and names_path.is_file():
         print('[taxonomy] Already built; skipping.')
         return sqlite_path
 
@@ -282,15 +410,26 @@ def setup_taxonomy(db_dir, force=False):
         for member_name in ('nodes.dmp', 'names.dmp', 'merged.dmp'):
             member = tar.getmember(member_name)
             member.name = Path(member.name).name
-            tar.extract(member, path=tax_dir)
+            safe_tar_extract(tar, member, tax_dir)
 
+    built_with_ete3 = False
     try:
         from ete3 import NCBITaxa
         print('  [build] Building local ETE3 SQLite taxonomy database...')
-        NCBITaxa(dbfile=str(sqlite_path), taxdump_file=str(tar_path), update=False)
-    except ImportError:
-        print('  [warn] ete3 not installed in current Python; extracted nodes.dmp/names.dmp only.')
+        NCBITaxa(dbfile=str(sqlite_path), taxdump_file=str(tar_path))
+        built_with_ete3 = sqlite_path.is_file() and sqlite_path.stat().st_size > 1024
+    except Exception as exc:
+        print(f'  [info] ETE3 NCBITaxa unavailable ({exc}); building compatible taxa.sqlite via sqlite3...')
 
+    if not built_with_ete3:
+        build_ete3_sqlite_fallback(sqlite_path, nodes_path, names_path, merged_path)
+
+    krona_update = shutil.which('ktUpdateTaxonomy.sh')
+    if krona_update and not (tax_dir / 'taxonomy.tab').is_file():
+        print('  [build] Building Krona taxonomy.tab via ktUpdateTaxonomy.sh --only-build --preserve...')
+        run_cmd([krona_update, '--only-build', '--preserve', str(tax_dir)])
+
+    (tax_dir / '.completed').write_text(datetime.now(timezone.utc).isoformat() + '\n')
     return sqlite_path
 
 
@@ -423,6 +562,7 @@ def setup_refseq_viral_protein(db_dir, threads=4, force=False):
         cmd.extend(['--taxonmap', acc2taxid, '--taxonnodes', nodes_dmp, '--taxonnames', names_dmp])
     run_cmd(cmd)
     combined_faa.unlink(missing_ok=True)
+    (out_dir / '.completed').write_text(datetime.now(timezone.utc).isoformat() + '\n')
     return dmnd_path, refs_faa
 
 
@@ -490,6 +630,7 @@ def setup_vog_hmm(db_dir, force=False):
     merge_vog_taxonomy_tables(ann_gz, lca_gz, tax_tsv)
     if shutil.which('hmmpress'):
         run_cmd(['hmmpress', '-f', hmm_path])
+    (out_dir / '.completed').write_text(datetime.now(timezone.utc).isoformat() + '\n')
     return hmm_path, tax_tsv
 
 
@@ -506,7 +647,8 @@ def setup_kraken2_viral(db_dir, force=False):
         for member in tar.getmembers():
             if member.isfile():
                 member.name = Path(member.name).name
-                tar.extract(member, path=out_dir)
+                safe_tar_extract(tar, member, out_dir)
+    (out_dir / '.completed').write_text(datetime.now(timezone.utc).isoformat() + '\n')
     return out_dir
 
 
@@ -521,24 +663,26 @@ def setup_checkv(db_dir, force=False):
             run_cmd(['checkv', 'download_database', out_dir])
             dmnd = next(out_dir.rglob('checkv_reps.dmnd'), None)
             if dmnd:
+                (out_dir / '.completed').write_text(datetime.now(timezone.utc).isoformat() + '\n')
                 return dmnd.parent.parent
         except Exception as exc:
-            print(f'  [warn] checkv CLI download failed ({exc}); falling back to Zenodo HTTPS mirror...')
+            print(f'  [warn] checkv CLI download failed ({exc}); falling back to NERSC HTTPS mirror...')
 
-    tar_path = download_file(CHECKV_ZENODO_URL, out_dir / 'checkv-db-v1.5.tar.gz')
+    tar_path = download_from_mirrors(CHECKV_URLS, out_dir / 'checkv-db-v1.5.tar.gz')
     with tarfile.open(tar_path, 'r:gz') as tar:
-        tar.extractall(path=out_dir)
+        safe_tar_extractall(tar, out_dir)
     faa = next(out_dir.rglob('checkv_reps.faa'), None)
     dmnd = next(out_dir.rglob('checkv_reps.dmnd'), None)
     if faa and not dmnd and shutil.which('diamond'):
         run_cmd(['diamond', 'makedb', '--in', faa, '--db', faa.with_suffix('')])
+    (out_dir / '.completed').write_text(datetime.now(timezone.utc).isoformat() + '\n')
     dmnd = next(out_dir.rglob('checkv_reps.dmnd'), None)
     return dmnd.parent.parent if dmnd else out_dir
 
 
 def setup_genomad(db_dir, force=False):
     out_dir = db_dir / 'genomad'
-    existing = next(out_dir.glob('genomad_db*'), None)
+    existing = next((p for p in out_dir.glob('genomad_db*') if p.is_dir()), None)
     if not force and existing and existing.is_dir():
         print('[genomad] Already downloaded; skipping.')
         return existing
@@ -546,16 +690,18 @@ def setup_genomad(db_dir, force=False):
     if shutil.which('genomad'):
         try:
             run_cmd(['genomad', 'download-database', out_dir])
-            found = next(out_dir.glob('genomad_db*'), None)
+            found = next((p for p in out_dir.glob('genomad_db*') if p.is_dir()), None)
             if found and found.is_dir():
+                (out_dir / '.completed').write_text(datetime.now(timezone.utc).isoformat() + '\n')
                 return found
         except Exception as exc:
             print(f'  [warn] genomad CLI download failed ({exc}); falling back to Zenodo HTTPS archive...')
 
-    tar_path = download_file(GENOMAD_ZENODO_URL, out_dir / 'genomad_db_v1.9.tar.gz')
+    tar_path = download_from_mirrors(GENOMAD_URLS, out_dir / 'genomad_db_v1.9.tar.gz')
     with tarfile.open(tar_path, 'r:gz') as tar:
-        tar.extractall(path=out_dir)
-    return next(out_dir.glob('genomad_db*'), out_dir / 'genomad_db')
+        safe_tar_extractall(tar, out_dir)
+    (out_dir / '.completed').write_text(datetime.now(timezone.utc).isoformat() + '\n')
+    return next((p for p in out_dir.glob('genomad_db*') if p.is_dir()), out_dir / 'genomad_db')
 
 
 def detect_installed_paths(db_dir):
@@ -620,20 +766,20 @@ def main():
         description='Download and build minimal reference databases for MetaNextViro.'
     )
     parser.add_argument(
-        '-d', '--db-dir', required=True,
-        help='Target directory where databases and databases.config will be stored'
+        '-d', '--db-dir', '--db_dir', dest='db_dir', default='~/.metanextviro/dbs',
+        help='Target directory where databases and databases.config will be stored (default: ~/.metanextviro/dbs)'
     )
     parser.add_argument(
-        '--preset', choices=sorted(PRESETS.keys()), default='full_viral',
+        '--preset', '--db-preset', '--db_preset', dest='preset', choices=sorted(PRESETS.keys()), default='full_viral',
         help='Database bundle preset: full_viral (~4.0 GB, default), minimal (~1.1 GB), discovery_only (~375 MB), or genbank_complete (~18-20 GB)'
     )
     parser.add_argument(
-        '--components',
+        '--components', '--db-components', '--db_components', dest='components',
         help=f'Comma-separated override list of components ({",".join(ALL_COMPONENTS)})'
     )
     parser.add_argument('-t', '--threads', type=int, default=4, help='Threads for database indexing (default: 4)')
-    parser.add_argument('--force', action='store_true', help='Rebuild components even if already present')
-    parser.add_argument('--dry-run', action='store_true', help='Show planned components and sizes without downloading')
+    parser.add_argument('--force', '--db-force', '--db_force', dest='force', action='store_true', help='Rebuild components even if already present')
+    parser.add_argument('--dry-run', '--dry_run', dest='dry_run', action='store_true', help='Show planned components and sizes without downloading')
     args = parser.parse_args()
 
     db_dir = Path(args.db_dir).expanduser().resolve()

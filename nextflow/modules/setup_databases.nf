@@ -1,12 +1,12 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Runs setup_databases.py on the local submission node to download, verify, and index the selected MetaNextViro reference database preset.
 
 process setup_databases {
     tag "$db_preset"
     executor 'local'
     cpus 4
-    conda "${projectDir}/envs/core.yml"
+    conda "${projectDir}/envs/setup_db.yml"
     container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
     input:

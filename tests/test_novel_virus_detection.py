@@ -1,5 +1,5 @@
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Unit tests verifying post-BLAST contig triage, 6-frame ORF and terminal repeat scanning, multi-evidence scoring, and ICTV taxonomic rank calibration."""
 
 import csv

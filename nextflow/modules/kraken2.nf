@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Classifies trimmed paired-end reads against a Kraken2 reference database and writes per-sample classification output and taxonomic summary reports.
 
 process kraken2 {

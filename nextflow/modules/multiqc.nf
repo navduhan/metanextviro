@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Aggregates FastQC and other module quality metrics into a single MultiQC HTML report and data directory.
 
 process multiqc {

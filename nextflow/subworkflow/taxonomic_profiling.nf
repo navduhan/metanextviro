@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Runs Kraken2 read-level classification and passes each Kraken2 report to Krona for visualization.
 
 include { kraken2 } from '../modules/kraken2.nf'

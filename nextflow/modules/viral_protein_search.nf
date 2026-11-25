@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Aligns translated candidate ORFs against a RefSeq viral protein DIAMOND database and attaches NCBI lineages using parse_discovery_hits.py.
 
 process viral_protein_search {

@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Main MetaNextViro workflow that connects input parsing, QC, trimming, host depletion, assembly, Kraken2 profiling, BLAST annotation, coverage, contig organization, discovery, and final reporting.
 
 include { INPUT_PARSER } from '../subworkflow/input_parser'
@@ -209,7 +209,7 @@ workflow metanextviro {
                 : params.blast_options.toString()
 
             def runMetaJson = groovy.json.JsonOutput.toJson([
-                version                 : workflow.manifest.version ?: '0.2.0',
+                version                 : workflow.manifest.version ?: '1.0.0',
                 nextflow_version        : "${nextflow.version}".toString(),
                 run_name                : workflow.runName ?: 'local',
                 assembler               : params.assembler,

@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Runs CheckV end_to_end on assembled or triaged contigs to estimate viral genome completeness, quality tier, host gene counts, and provirus boundaries.
 
 process checkv {

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Generates cohort summary and per-sample viral analysis reports in PDF and standalone HTML formats. Combines aggregated pipeline metrics, high-resolution charts, and dynamic methods text into self-contained files."""
 
 import argparse
@@ -452,7 +452,7 @@ def _render_pdf_reportlab(spec, pdf_path, logo_path=None):
                 self.drawString(0.55 * inch, h - 0.40 * inch, spec['report_title'])
                 self.setFont('Helvetica', 8)
                 self.setFillColor(colors.HexColor('#64748B'))
-                self.drawRightString(w - 0.55 * inch, h - 0.40 * inch, f"MetaNextViro v{spec['run_meta'].get('version', '0.2.0')}")
+                self.drawRightString(w - 0.55 * inch, h - 0.40 * inch, f"MetaNextViro v{spec['run_meta'].get('version', '1.0.0')}")
 
             self.setStrokeColor(colors.HexColor('#CBD5E1'))
             self.setLineWidth(0.5)
@@ -634,7 +634,7 @@ def _render_pdf_matplotlib_fallback(spec, pdf_path, logo_path=None):
         if page_num > 1:
             chrome_ax.plot([0.06, 0.94], [0.952, 0.952], color='#CBD5E1', linewidth=0.7)
             chrome_ax.text(0.06, 0.960, spec['report_title'], fontsize=8, fontweight='bold', color='#1E293B')
-            chrome_ax.text(0.94, 0.960, f"MetaNextViro v{spec['run_meta'].get('version', '0.2.0')}",
+            chrome_ax.text(0.94, 0.960, f"MetaNextViro v{spec['run_meta'].get('version', '1.0.0')}",
                            fontsize=8, color='#64748B', ha='right')
         chrome_ax.plot([0.06, 0.94], [0.048, 0.048], color='#CBD5E1', linewidth=0.7)
         chrome_ax.text(0.06, 0.030, f"Generated: {spec['timestamp']}", fontsize=7.5, color='#64748B')
@@ -1241,7 +1241,7 @@ def render_html(spec, html_path, logo_path=None):
         <h1>{html.escape(spec['report_title'])}</h1>
         <p class="subtitle">{html.escape(spec['subtitle'])}</p>
         <div class="meta-strip">
-          MetaNextViro v{html.escape(str(spec['run_meta'].get('version', '0.2.0')))} &bull;
+          MetaNextViro v{html.escape(str(spec['run_meta'].get('version', '1.0.0')))} &bull;
           Assembler: {html.escape(str(spec['run_meta'].get('assembler', 'megahit')))} &bull;
           BLAST: {html.escape(str(spec['run_meta'].get('blast_options', 'viruses')))} &bull;
           Generated: {html.escape(spec['timestamp'])}

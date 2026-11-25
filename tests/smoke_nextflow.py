@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """End-to-end local smoke test executing MEGAHIT, BLAST+, DIAMOND, Bowtie2, SAMtools, Nextflow resume, publishing modes, and log-preserving cleanup on synthetic data in a temporary directory.
 
 Run inside the pipeline environment: python tests/smoke_nextflow.py

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 # Description: Calculates whole-contig mean read depth and coverage breadth from a coordinate-sorted, indexed BAM file. Uses samtools idxstats and samtools depth so uncovered positions and zero-read contigs stay included.
 
 set -euo pipefail

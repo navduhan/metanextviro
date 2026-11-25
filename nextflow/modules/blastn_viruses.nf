@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Aligns assembled contigs against the viral nucleotide reference database using blastn and runs process_blast_results.py to produce sorted best-hit and multi-HSP tables.
 
 process blastn_viruses {
@@ -12,7 +12,7 @@ process blastn_viruses {
         mode: params.publish_mode,
         overwrite: true,
         failOnError: true,
-        saveAs: { filename -> filename.startsWith("${id}_best_hits_") ? filename : "details/${filename}" }
+        saveAs: { filename -> filename.contains('_best_hits_') ? filename : "details/${filename}" }
 
     input:
         tuple val(id), path(fasta_file)  // Input: Sample ID and FASTA file
@@ -43,6 +43,7 @@ process blastn_viruses {
     echo " Using BLAST database: ${resolvedDb}"
 
     # Run BLAST search
+    export BLASTDB_LMDB_MAP_SIZE="\${BLASTDB_LMDB_MAP_SIZE:-100000000}"
     blastn \
         -query ${fasta_file} \
         -db "${resolvedDb}" \

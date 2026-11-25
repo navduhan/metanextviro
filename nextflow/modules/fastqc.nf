@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Runs FastQC on paired-end sequencing reads to produce per-sample HTML and ZIP read quality reports.
 
 process fastqc {
@@ -28,13 +28,13 @@ process fastqc {
     echo " - Reads1: ${reads1}"
     [ -n "${reads2}" ] && echo " - Reads2: ${reads2}" || echo " - Reads2: None (Single-end)"
 
-    # Run FastQC based on input file type
+    # Run FastQC based on input file type (--outdir is compatible across FastQC 0.11.x-0.13+)
     if [ -z "${reads2}" ]; then
         echo "Running FastQC in single-end mode..."
-        fastqc -t ${task.cpus} -o fastqc_reports ${reads1}
+        fastqc -t ${task.cpus} --outdir fastqc_reports ${reads1}
     else
         echo "Running FastQC in paired-end mode..."
-        fastqc -t ${task.cpus} -o fastqc_reports ${reads1} ${reads2}
+        fastqc -t ${task.cpus} --outdir fastqc_reports ${reads1} ${reads2}
     fi
 
     # Verify output and log success

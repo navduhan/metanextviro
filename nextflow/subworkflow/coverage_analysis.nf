@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Connects assembled contigs and trimmed paired reads to the coverage module and emits whole-contig depth tables and BAM alignments.
 
 include { coverage } from '../modules/coverage.nf'

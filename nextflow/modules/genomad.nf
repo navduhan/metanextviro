@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Runs optional geNomad end-to-end classification on candidate contigs to separate viral genomes, plasmids, and integrated proviruses.
 
 process genomad {

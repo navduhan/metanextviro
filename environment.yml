@@ -1,5 +1,5 @@
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 # Description: Lightweight Conda launcher environment installing Nextflow, OpenJDK 21, and Python so users can run MetaNextViro with conda, mamba, docker, singularity, or apptainer profiles.
 
 name: metanextviro

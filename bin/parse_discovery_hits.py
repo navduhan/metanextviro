@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Parses HMMER profile hits, DIAMOND viral protein alignments, and Foldseek structural matches and attaches resolved ICTV taxonomic lineages for downstream candidate scoring."""
 
 import argparse

@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Runs optional Foldseek 3D structural homology searches on candidate viral ORFs and formats parsed alignments with parse_discovery_hits.py.
 
 process foldseek_viral {

@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Reads a tab-delimited abundance matrix and plots a comparative heatmap PNG using pandas and seaborn.
 
 process heatmap {

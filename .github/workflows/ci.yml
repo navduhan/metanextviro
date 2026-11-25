@@ -1,5 +1,5 @@
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 # Description: GitHub Actions workflow that runs the Python unit test suite on pushes and pull requests and publishes the container image to GitHub Container Registry on main and release tags.
 
 name: CI and Container Publish
@@ -25,7 +25,7 @@ jobs:
         run: python -m unittest discover -s tests -v
 
   publish-container:
-    needs: unit-tests
+    needs: [unit-tests]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
     permissions:

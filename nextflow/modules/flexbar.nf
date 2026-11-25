@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Performs adapter trimming and Phred quality filtering on paired-end reads using Flexbar.
 
 process flexbar {

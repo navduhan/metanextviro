@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Previews and executes log-preserving cleanup of task work files for a completed Nextflow run. Verifies run status and checks that published results contain real files before calling nextflow clean."""
 
 import argparse

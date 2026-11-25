@@ -1,5 +1,5 @@
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Unit tests checking Nextflow run history parsing, symlink and overlap guards, and dry-run versus apply behavior in cleanup_work.py."""
 
 import importlib.util

@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Builds a Bowtie2 index for assembled contigs, maps trimmed paired reads with SAMtools sorting, and runs calculate_contig_coverage.sh to compute whole-contig depth and breadth.
 
 process coverage {
@@ -26,11 +26,11 @@ process coverage {
     set -euo pipefail
 
     # Index the contigs
-    bowtie2-build ${contigs} ${id}_index
+    bowtie2-build --threads ${task.cpus} ${contigs} ${id}_index
 
     # Map reads to contigs
-    bowtie2 -x ${id}_index -1 ${reads1} -2 ${reads2} 2> ${id}.mapping.log | \
-        samtools sort -o ${id}.bam -
+    bowtie2 -p ${task.cpus} -x ${id}_index -1 ${reads1} -2 ${reads2} 2> ${id}.mapping.log | \
+        samtools sort -@ ${task.cpus} -o ${id}.bam -
     samtools index ${id}.bam
 
     # Generate contig-level coverage stats

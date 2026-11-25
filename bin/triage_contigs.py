@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Author: Naveen Duhan
-# License: MIT (see LICENSE)
+# SPDX-License-Identifier: MIT
 """Partitions assembled contigs after BLAST alignment so confident known viral hits, cellular sequences, and short fragments skip downstream discovery while unassigned or divergent contigs move forward."""
 
 import argparse

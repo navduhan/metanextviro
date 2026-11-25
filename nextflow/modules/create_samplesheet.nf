@@ -1,5 +1,5 @@
 // Author: Naveen Duhan
-// License: MIT (see LICENSE)
+// SPDX-License-Identifier: MIT
 // Description: Runs create_samplesheet.py locally to build a validated CSV samplesheet from a directory of paired FASTQ files.
 
 process create_samplesheet {
@@ -8,11 +8,14 @@ process create_samplesheet {
     cpus 1
     container "${ workflow.containerEngine in ['singularity', 'apptainer'] ? 'docker://' + params.container_image : params.container_image }"
 
-    publishDir "${out_dir}", mode: 'copy', overwrite: true, failOnError: true
+    publishDir (
+        params.create_samplesheet
+            ? file(params.samplesheet ?: 'samplesheet.csv').toAbsolutePath().parent.toString()
+            : file(params.outdir).toAbsolutePath().toString()
+    ), mode: 'copy', overwrite: true, failOnError: true
 
     input:
         val reads_dir
-        val out_dir
         val out_name
 
     output:
